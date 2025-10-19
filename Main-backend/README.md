@@ -1,0 +1,21 @@
+uvicorn API:app --reload
+use Live server to test the frontend ... http://127.0.0.1:5500/Main-backend/pages/login.html
+also do this in the db
+
+-- Step 1: Create the group role "admin"
+CREATE ROLE admin;
+
+
+-- Step 2: Create the user "admin1" with a password.
+CREATE USER admin1 WITH PASSWORD admin123; 
+
+-- Step 3: Add user "admin" to the "admin" group 
+GRANT admin TO admin1; 
+
+-- Step 4: Grant all privileges on the database "cif" to the group
+GRANT ALL PRIVILEGES ON DATABASE cif TO admin;
+
+
+
+
+

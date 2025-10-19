@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <div>
+        <form id="loginForm">
+            <div>username: <input id="usernameInput" type="text"></div>
+            <div>password: <input id="passwordInput" type="password"></div>
+            <div><button type="submit">Login</button></div>
+        </form>
+    </div>
+    <script src="admin.js"></script>
+    <script src="script.js"></script>
+    <link rel="stylesheet" href="login.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = getCookie();
+            // if (token) {
+            //     window.location.href = 'main.html';
+            // } 
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>CIF</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="faculty.css" />
+  <script src="script.js"></script>
+  <script src="main.js"></script>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="logo">CIF FACULTY PORTAL</div>
+    <div class="user-menu">
+      <h3 class="current-user">User:</h3>
+      <div class="dropdown-content">
+        <button onclick="show_current_user()">Profile</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+  <div class="row">
+    <div class="column">
+      <h3>Requests For Staff Role</h3>
+      <button onclick="showPendingRequestsStaff()" style="
+            padding: 8px 16px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-bottom: 10px;
+          ">
+        Show Requests
+      </button>
+      <div id="showPendingStaff"></div>
+    </div>
+    <div class="row">
+
+      <div class="column">
+        <h3>Add New Equipment Slot</h3>
+        <p>Create new available slots for a piece of equipment.</p>
+
+        <form id="insertSlotForm">
+          <div class="form-group">
+            <label for="equipmentId">Equipment ID:</label>
+            <input type="text" id="equipmentId" name="equipmentId" required placeholder="e.g., EQ001" />
+          </div>
+
+          <div class="form-group">
+            <label for="startTime">Start of Time Range:</label>
+            <input type="datetime-local" id="startTime" name="startTime" required />
+          </div>
+
+          <div class="form-group">
+            <label for="endTime">End of Time Range:</label>
+            <input type="datetime-local" id="endTime" name="endTime" required />
+          </div>
+
+          <button onclick="handleAddSlot(event)" type="submit">Create Slots</button>
+        </form>
+
+        <div id="responseMessage" style="margin-top: 15px"></div>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const token = getCookie();
+    if (!token) {
+      window.location.href = "login.html";
+    }
+    console.log("Token Test");
+    show_current_user();
+  });
+</script>
+
+</html>

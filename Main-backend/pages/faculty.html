@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>CIF</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="faculty.css" />
+  <script src="main.js"></script>
+  <script src="script.js"></script>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="logo">CIF FACULTY PORTAL</div>
+    <div class="user-menu">
+      <h3 class="current-user">User:</h3>
+      <div class="dropdown-content">
+        <button onclick="show_current_user()">Profile</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="row">
+    <div class="column">
+      <h3>Requests For SuperVisor Role</h3>
+      <button onclick="showPendingRequestsSuper()" style="
+            padding: 8px 16px; background-color: #333; color: #fff;
+            border: none; cursor: pointer; margin-top: 10px; margin-bottom: 10px;">
+        Show Requests
+      </button>
+      <div id="showPendingSuper"></div>
+    </div>
+    <div class="column">
+      <h3>Requests For Faculty Incharge Role</h3>
+      <button onclick="showPendingRequestsIn()" style="
+            padding: 8px 16px; background-color: #333; color: #fff;
+            border: none; cursor: pointer; margin-top: 10px; margin-bottom: 10px;">
+        Show Requests
+      </button>
+      <div id="showPendingIn"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="column">
+      <h3>Add New Project</h3>
+      <button id="openProjectModalBtn" onclick="openProjectModal()" style="
+          padding: 8px 16px; background-color: #007bff; color: #fff;
+          border: none; cursor: pointer; width: 95%;">
+        + Add New Project
+      </button>
+      <div id="projectAddResult" style="margin-top: 15px; font-weight: bold;"></div>
+    </div>
+
+    <div class="column">
+      <h3>My Project Status</h3>
+      <button onclick="showMyProjects()" style="
+          padding: 8px 16px; background-color: #333; color: #fff;
+          border: none; cursor: pointer; margin-top: 10px; margin-bottom: 10px;">
+        Show My Projects
+      </button>
+      <div id="myProjectsContainer" style="overflow-y: auto; max-height: 400px;"></div>
+    </div>
+  </div>
+
+  <div id="addProjectModal" class="modal" onclick="closeModalIfOutside(event)">
+    <div class="modal-content">
+      <span class="close-button" id="closeProjectModalBtn" onclick="closeProjectModal()">&times;</span>
+      <h3>Add New Project</h3>
+      <form id="addProjectForm" onsubmit="addNewProject(event)">
+        <div style="margin-bottom: 15px;">
+          <label for="project_type">Project Funding Type:</label><br />
+          <select id="project_type" name="project_type" required onchange="updateProjectId()" style="width: 95%; padding: 5px;">
+            <option value="" disabled selected>-- Select a type --</option>
+            <option value="department_fund">Department Fund</option>
+            <option value="cif_credit">CIF Credit</option>
+            <option value="industrial_consultancy">Industrial Consultancy</option>
+            <option value="sponsored_project">Sponsored Project</option>
+          </select>
+        </div>
+
+        <div id="departmentContainer" style="margin-bottom: 15px; display: none;">
+          <label for="department_id">Select Department:</label><br />
+           <select id="department_id" name="department_id" onchange="updateProjectId()" style="width: 95%; padding: 5px;"></select>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label for="project_title">Project Title:</label><br />
+          <input type="text" id="project_title" name="project_title" required style="width: 90%; padding: 5px;" />
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label for="project_id">Project ID:</label><br>
+          <input type="text" id="project_id" name="project_id" readonly style="width: 90%; padding: 5px; background-color: #e9ecef;" />
+          <p id="projectIdPreview" style="font-family: monospace; color: #495057;"></p>
+        </div>
+
+        <button type="submit" style="
+          padding: 8px 16px; background-color: #28a745; color: #fff;
+          border: none; cursor: pointer;">
+          Submit Project Request
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const token = getCookie();
+      if (!token) {
+        window.location.href = "login.html";
+      }
+      show_current_user();
+    });
+  </script>
+
+</body>
+
+</html>

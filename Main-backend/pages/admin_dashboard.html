@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">Admin Dashboard</div>
+        <button onclick="logout()">Logout</button>
+    </nav>
+
+    <div class="container">
+        <div class="menu">
+            <button data-section="student" onclick="activateButton(this); showSection('student')">Manage Students</button>
+            <button data-section="faculty" onclick="activateButton(this); showSection('faculty')">Manage Faculty</button>
+            <button data-section="staff" onclick="activateButton(this); showSection('staff')">Manage Staff</button>
+            <button data-section="equipment" onclick="activateButton(this); showSection('equipment')">Manage Equipment</button>
+            <button data-section="project_approval" onclick="activateButton(this); showProjectApprovals()">Project Approvals</button>
+        </div>
+
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Search...">
+            <button onclick="search()">Search</button>
+        </div>
+
+        <div class="add-section">
+            <button onclick="showAddForm()">Add New</button>
+        </div>
+
+        <div id="contentArea"></div>
+    </div>
+    <!-- <script src="script.js"></script> -->
+    <script src="admin.js"></script>
+</body>
+</html>

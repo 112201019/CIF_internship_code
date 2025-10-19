@@ -1,0 +1,257 @@
+.navbar {
+  background-color: #333;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.container {
+  padding: 2rem;
+}
+
+.menu {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.menu button {
+  padding: 0.5rem 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.menu button:hover {
+  background-color: #45a049;
+}
+
+.menu button.active {
+  background-color: #45a049;
+}
+
+.search-section {
+  margin-bottom: 1rem;
+}
+
+.search-section input {
+  padding: 0.5rem;
+  width: 300px;
+  margin-right: 0.5rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #f4f4f4;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+/* Add to existing CSS */
+.menu button.active {
+  background-color: #2E7D32;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.error-message {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.success-message {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+/* Add these to your existing CSS */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f8f8f8;
+}
+
+.data-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actions button:first-child {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.actions button:last-child {
+  background-color: #f44336;
+  color: white;
+}
+
+.no-data {
+  text-align: center;
+  color: #666;
+  padding: 20px !important;
+}
+
+.error-message {
+  padding: 15px;
+  margin: 20px 0;
+  border-radius: 4px;
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+
+/* Add to existing CSS */
+.form-container {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-container button {
+  margin-right: 10px;
+}
+
+.form-container button[type="button"] {
+  background-color: #6c757d;
+}
+
+.success-message {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  animation: fadeOut 3s forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.note {
+  color: #666;
+  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.form-container input:not([required]) {
+  border: 1px solid #ddd;
+}
+
+.form-container input:not([required]):focus {
+  border-color: #4CAF50;
+}
