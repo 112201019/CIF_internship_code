@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">Admin Portal</div>
+            <div class="sidebar-nav" id="admin-nav">
+                <ul>
+                    <li><a href="#" class="active" data-section="student"
+                            onclick="activateLink(this); showSection('student')">Manage Students</a></li>
+                    <li><a href="#" data-section="faculty" onclick="activateLink(this); showSection('faculty')">Manage
+                            Faculty</a></li>
+                    <li><a href="#" data-section="staff" onclick="activateLink(this); showSection('staff')">Manage
+                            Staff</a></li>
+                    <li><a href="#" data-section="equipment"
+                            onclick="activateLink(this); showSection('equipment')">Manage Equipment</a></li>
+                    <li><a href="#" data-section="project_approval"
+                            onclick="activateLink(this); showProjectApprovals()">Project Approvals</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <header class="content-header">
+                <button onclick="logout()" class="btn-reject">Logout</button>
+            </header>
+
+            <main class="page-content">
+                <div class="row">
+                    <div class="column">
+                        <h1 class="page-title" id="page-title">Manage Students</h1>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="row" style="align-items: center;">
+                        <div class="form-group column" style="flex-grow: 2;">
+                            <input type="text" id="searchInput" placeholder="Search...">
+                        </div>
+                        <div class="column" style="display: flex; justify-content: flex-end;">
+                            <button onclick="search()" class="btn-secondary">Search</button>
+                            <button onclick="showAddForm()" class="btn-primary">Add New</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="contentArea" class="card" style="margin-top: 24px;">
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="js/utils.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

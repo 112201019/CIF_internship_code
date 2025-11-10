@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Faculty Portal</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="js/utils.js"></script>
+    <script src="js/script.js"></script>
+</head>
+
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">Faculty Portal</div>
+            <div class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="active">Dashboard</a></li>
+                    <li><a href="#" onclick="openProjectModal()">Add Project</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <header class="content-header">
+                <div class="current-user">User:</div>
+                <button onclick="logout()" class="btn-reject">Logout</button>
+            </header>
+
+            <main class="page-content">
+                <h1 class="page-title">Faculty Dashboard</h1>
+
+                <div class="row">
+                    <div class="column card">
+                        <h3>My Project Status</h3>
+                        <button onclick="showMyProjects()" class="btn-secondary">Show My Projects</button>
+                        <div id="myProjectsContainer" style="overflow-y: auto; max-height: 400px;"></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="column card">
+                        <h3>Requests For SuperVisor Role</h3>
+                        <button onclick="showPendingRequestsSuper()" class="btn-secondary">Show Requests</button>
+                        <div id="showPendingSuper"></div>
+                    </div>
+                    <div class="column card">
+                        <h3>Requests For Faculty Incharge Role</h3>
+                        <button onclick="showPendingRequestsIn()" class="btn-secondary">Show Requests</button>
+                        <div id="showPendingIn"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="addProjectModal" class="modal" onclick="closeModalIfOutside(event)">
+        <div class="modal-content">
+            <span class="close-button" id="closeProjectModalBtn" onclick="closeProjectModal()">&times;</span>
+            <h3>Add New Project</h3>
+            <form id="addProjectForm" class="form-container" onsubmit="addNewProject(event)">
+                <div class="form-group">
+                    <label for="project_type">Project Funding Type:</label>
+                    <select id="project_type" name="project_type" required onchange="updateProjectId()">
+                        <option value="" disabled selected>-- Select a type --</option>
+                        <option value="department_fund">Department Fund</option>
+                        <option value="cif_credit">CIF Credit</option>
+                        <option value="industrial_consultancy">Industrial Consultancy</option>
+                        <option value="sponsored_project">Sponsored Project</option>
+                    </select>
+                </div>
+                <div id="departmentContainer" class="form-group" style="display: none;">
+                    <label for="department_id">Select Department:</label>
+                    <select id="department_id" name="department_id" onchange="updateProjectId()"></select>
+                </div>
+                <div class="form-group">
+                    <label for="project_title">Project Title:</label>
+                    <input type="text" id="project_title" name="project_title" required />
+                </div>
+                <div class="form-group">
+                    <label for="project_id">Project ID:</label>
+                    <input type="text" id="project_id" name="project_id" readonly style="background-color: #e9ecef;" />
+                    <p id="projectIdPreview" style="font-family: monospace; color: #495057;"></p>
+                </div>
+                <button type="submit" class="btn-approve">Submit Project Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = getCookie();
+            if (!token) { window.location.href = "login.html"; }
+            show_current_user();
+            showMyProjects(); // Show projects on load
+        });
+    </script>
+</body>
+
+</html>

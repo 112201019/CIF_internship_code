@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>CIF Dashboard</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="js/utils.js"></script>
+    <script src="js/script.js"></script>
+</head>
+
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">CIF Portal</div>
+            <div class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="active">Dashboard</a></li>
+                    <li><a href="booking.html">Book Equipment</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <header class="content-header">
+                <div class="current-user">User:</div>
+                <button onclick="logout()" class="btn-reject">Logout</button>
+            </header>
+
+            <main class="page-content">
+                <h1 class="page-title">Welcome, Student</h1>
+
+                <div class="row">
+                    <div class="column card">
+                        <h3>Available Equipment</h3>
+                        <table id="equipmentTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Equipment Name</th>
+                                    <th>Book</th>
+                                </tr>
+                            </thead>
+                            <tbody id="equipmentTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="column">
+                        <div class="card">
+                            <h3>Track Request</h3>
+                            <div class="track-request form-group">
+                                <input type="text" id="requestIdInput" placeholder="Enter Request ID" />
+                                <button onclick="trackRequest()" class="btn-secondary">Track</button>
+                            </div>
+                            <div class="request-info hidden request-item" id="requestInfo">
+                                <p>Request ID: <span id="reqId"></span></p>
+                                <p>Date: <span id="reqDate"></span></p>
+                                <p>Status: <span id="reqApproved"></span></p>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin-top: 24px;">
+                            <h3>My Requests</h3>
+                            <button onclick="showRequestsAll()" class="btn-secondary">Show All</button>
+                            <div id="requestInfo2" class="show-requests"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = getCookie();
+            if (!token) { window.location.href = "login.html"; }
+            checkUser();
+            show_current_user();
+            fetchAndDisplayEquipments();
+        });
+    </script>
+</body>
+
+</html>

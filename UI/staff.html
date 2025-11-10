@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Staff Portal</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="js/utils.js"></script>
+    <script src="js/script.js"></script>
+</head>
+
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">Staff Portal</div>
+            <div class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="active">Dashboard</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <header class="content-header">
+                <div class="current-user">User:</div>
+                <button onclick="logout()" class="btn-reject">Logout</button>
+            </header>
+
+            <main class="page-content">
+                <h1 class="page-title">Staff Dashboard</h1>
+                <div class="row">
+                    <div class="column card">
+                        <h3>Pending Staff Requests</h3>
+                        <button onclick="showPendingRequestsStaff()" class="btn-secondary">Show Requests</button>
+                        <div id="showPendingStaff"></div>
+                    </div>
+                    <div class="column card">
+                        <h3>Add New Equipment Slot</h3>
+                        <p>Create new available slots for a piece of equipment.</p>
+                        <form id="insertSlotForm" class="form-container">
+                            <div class="form-group">
+                                <label for="equipmentId">Equipment ID:</label>
+                                <input type="text" id="equipmentId" name="equipmentId" required
+                                    placeholder="e.g., EQ001" />
+                            </div>
+                            <div class="form-group">
+                                <label for="startTime">Start of Time Range:</label>
+                                <input type="datetime-local" id="startTime" name="startTime" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="endTime">End of Time Range:</label>
+                                <input type="datetime-local" id="endTime" name="endTime" required />
+                            </div>
+                            <button onclick="handleAddSlot(event)" type="submit" class="btn-primary">Create
+                                Slots</button>
+                        </form>
+                        <div id="responseMessage" style="margin-top: 15px"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = getCookie();
+            if (!token) { window.location.href = "login.html"; }
+            show_current_user();
+        });
+    </script>
+</body>
+
+</html>

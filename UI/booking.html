@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Book Equipment</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="js/utils.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/book.js"></script>
+</head>
+
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">CIF Portal</div>
+            <div class="sidebar-nav">
+                <ul>
+                    <li><a href="main.html">Dashboard</a></li>
+                    <li><a href="booking.html" class="active">Book Equipment</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <header class="content-header">
+                <div class="current-user">User:</div>
+                <button onclick="logout()" class="btn-reject">Logout</button>
+            </header>
+
+            <main class="page-content">
+                <h1 class="page-title" id="booking-page-title">Loading...</h1>
+
+                <div class="card">
+                    <h3>Available Slots</h3>
+                    <p id="booking-instructions">Select an available time slot and enter your Project ID to book.</p>
+                    <div id="slot-list-container">
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = getCookie();
+            if (!token) {
+                window.location.href = "login.html";
+            }
+            show_current_user();
+            // This new function loadAndDisplayAllSlots() replaces the old trackRequest()
+            loadAndDisplayAllSlots();
+        });
+    </script>
+</body>
+
+</html>
