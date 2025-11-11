@@ -1,3 +1,5 @@
+let selectedProjectID = null; // Global variable to store the selected project
+
 function setCookie(name, value, days = 1) {
   var expires = "";
   if (days) {
@@ -38,6 +40,85 @@ function getURLParameter(name) {
 
 // console.log(getURLParameter("equipment"));
 
+// --- NEW FUNCTION TO FETCH PROJECTS ---
+async function fetchAndDisplayProjects() {
+  const token = getCookie();
+  const container = document.getElementById("projectTable");
+
+  try {
+    const response = await fetch("http://localhost:8000/show_projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch projects");
+    }
+
+    const data = await response.json();
+    if (!data.message || data.message.length === 0) {
+      container.innerHTML = "<p>You have no active projects available for booking.</p>";
+      return;
+    }
+
+    // Build the table
+    let tableHTML = `
+      <table id="projectTable">
+        <thead>
+          <tr>
+            <th>Project ID</th>
+            <th>Project Title</th>
+            <th>Supervisor</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    data.message.forEach((project) => {
+      tableHTML += `
+        <tr id="project-row-${project.project_id}">
+          <td>${project.project_id}</td>
+          <td>${project.project_title}</td>
+          <td>${project.supervisor}</td>
+          <td>
+            <button class="select-project-btn" onclick="selectProject('${project.project_id}')">
+              Select
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableHTML += `</tbody></table>`;
+    container.innerHTML = tableHTML;
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    container.innerHTML = "<p>Error loading your projects. Please try again.</p>";
+  }
+}
+
+// --- NEW HELPER FUNCTION TO SELECT PROJECT ---
+function selectProject(projectID) {
+  // Store the selected ID globally
+  selectedProjectID = projectID;
+  
+  // Remove highlighting from all rows
+  const allRows = document.querySelectorAll("#projectTable tbody tr");
+  allRows.forEach(row => {
+    row.classList.remove("selected-project");
+  });
+
+  // Add highlighting to the clicked row
+  const selectedRow = document.getElementById(`project-row-${projectID}`);
+  if (selectedRow) {
+    selectedRow.classList.add("selected-project");
+  }
+
+}
+
+
 function trackRequest() {
   const token = getCookie();
 
@@ -58,28 +139,8 @@ function trackRequest() {
     .then((response) => response.json())
     .then((data) => {
       /*
-    response format:{
-  "message": [
-    {
-      "equipment_id": "c0101",
-      "location": "computer lab 1"
-    },
-    {
-      "equipment_id": "c0102",
-      "location": "computer lab 1"
-    },
-    {
-      "equipment_id": "c0201",
-      "location": "computer lab 2"
-    },
-    {
-      "equipment_id": "c0202",
-      "location": "computer lab 2"
-    }
-  ]
-}
-        */
-      //    div name is books put a cool looking table
+    response format:{...}
+    */
       const table = document.getElementById("books");
       const message = data.message;
       message.forEach((element) => {
@@ -128,38 +189,32 @@ function trackRequest() {
                 slotDiv.innerHTML = `
                     <p>Slot ID: ${slot.slot_id}</p>
                     <p>Slot Time: ${slot.slot_time}</p>`;
-                // add a input field for the project id
-                const input = document.createElement("input");
-                input.placeholder = "Project ID";
-                input.style = `
-                    padding: 8px 16px;
-                    margin-top: 10px;
-                    width: 97%;
 
-                  `;
-                slotDiv.appendChild(input);
+                // --- INPUT FIELD REMOVED ---
+                // const input = document.createElement("input");
+                // ...
+                // slotDiv.appendChild(input);
 
                 slots.appendChild(slotDiv);
+                
                 const slotButton = document.createElement("button");
-                slotButton.classList.add("request-button");
-                slotButton.textContent = "Book";
-                slotButton.style = `
-                    padding: 8px 16px;
-                    background-color: #333;
-                    color: #fff;
-                    border: none;
-                    cursor: pointer;
-                    margin-top: 10px;
-                  `;
+                slotButton.classList.add("book-slot-btn"); // Use new CSS class
+                slotButton.textContent = "Book This Slot";
                 slotDiv.appendChild(slotButton);
+                
                 slotButton.addEventListener("click", () => {
-                  const project_id = input.value;
+                  
+                  // --- MODIFIED LOGIC ---
+                  // Check if a project was selected first
+                  if (!selectedProjectID) {
+                    alert("Please select a project from the table in Step 1 first.");
+                    return;
+                  }
+                  
+                  const project_id = selectedProjectID; // Use the stored project ID
+                  // --- END MODIFICATION ---
+
                   const requestData = {
-                    // {
-                    //   "token": "string",
-                    //   "slot_ID": 0,
-                    //   "project_ID": "string"
-                    // }
                     token: token,
                     slot_ID: slot.slot_id,
                     project_ID: project_id,

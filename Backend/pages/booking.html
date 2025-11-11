@@ -3,10 +3,129 @@
   <head>
     <meta charset="UTF-8" />
     <title>CIF</title>
-    <link rel="stylesheet" href="styles.css" />
     <script src="script.js"></script>
-    <!-- Add Script for book.js -->
     <script src="book.js"></script>
+
+    <style>
+      /* --- GLOBAL STYLES --- */
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+      }
+
+      /* --- NAVBAR STYLES --- */
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #333;
+        color: #fff;
+      }
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .user-menu {
+        position: relative;
+      }
+      .user-menu:hover .dropdown-content {
+        display: block;
+      }
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        background-color: #f9f9f9;
+        min-width: 120px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+      }
+      .dropdown-content button {
+        color: black;
+        padding: 8px 16px;
+        text-align: left;
+        border: none;
+        background: none;
+        cursor: pointer;
+        width: 100%;
+      }
+      .dropdown-content button:hover {
+        background-color: #ddd;
+      }
+
+      /* --- PAGE CONTENT STYLES --- */
+      .content {
+        margin: 20px;
+        margin-bottom: 20px; /* Reduced margin */
+      }
+      
+      /* --- NEW PROJECT TABLE STYLES --- */
+      #projectListContainer {
+        margin: 0 20px 20px 20px; /* Spacing */
+      }
+      #projectTable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      #projectTable th,
+      #projectTable td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
+      #projectTable th {
+        background-color: #f4f4f4;
+      }
+      /* Style for the button inside the table */
+      .select-project-btn {
+        padding: 5px 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .select-project-btn:hover {
+        background-color: #0056b3;
+      }
+      /* Class to highlight the selected project row */
+      .selected-project {
+        background-color: #d4edda !important; /* Light green */
+      }
+
+      /* --- DYNAMIC EQUIPMENT STYLES --- */
+      #books {
+        padding: 0 20px;
+      }
+      .book {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+      }
+      .slot {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      /* Style for the "Book" button in the slot */
+      .book-slot-btn {
+        padding: 8px 16px;
+        background-color: #28a745; /* Green */
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+        border-radius: 4px;
+      }
+      .book-slot-btn:hover {
+        background-color: #218838;
+      }
+    </style>
   </head>
   <body>
     <nav class="navbar">
@@ -19,19 +138,35 @@
         </div>
       </div>
     </nav>
-    <div class="content" style="margin: 20px; margin-bottom: 40px">
+
+    <div class="content">
       <h1>Book Your Slot</h1>
       <p>Book your equipments</p>
     </div>
-    <div id="books"></div>
+
+    <div id="projectListContainer">
+      <h3>1. Select Your Project</h3>
+      <div id="projectTable">
+        <p>Loading your projects...</p>
+      </div>
+    </div>
+    <div class="content" style="margin: 20px 20px 0 20px;">
+        <h3>2. Find an Available Slot</h3>
+    </div>
+    <div id="books">
+      </div>
   </body>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const token = getCookie();
       if (!token) {
         window.location.href = "login.html";
+        return;
       }
       show_current_user();
+      
+      // NEW: Call the function to load projects
+      fetchAndDisplayProjects();
     });
   </script>
 </html>

@@ -2,10 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>CIF</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CIF Dashboard</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="script.js"></script>
-    <!-- <script src="main.js"></script> -->
   </head>
   <body>
     <nav class="navbar">
@@ -18,91 +18,84 @@
         </div>
       </div>
     </nav>
-    <div class="content" style="margin: 20px; margin-bottom: 40px">
-      <h1>Welcome to CIF</h1>
-      <p>Use the following functionality to proceed with what you want.</p>
-    </div>
-    <!-- Print a table with all the main equipments -->
-    <div class="row">
-      <div class="show-equipments column">
-        <table
-          id="equipmentTable"
-          style="width: 100%; border-collapse: collapse; margin-top: 30px"
-        >
-          <thead>
-            <tr>
-              <th style="border: 1px solid #333; padding: 18px">
-                Equipment Name
-              </th>
-            </tr>
-          </thead>
-          <tbody id="equipmentTableBody">
-            <!-- Equipment rows will be added here -->
-          </tbody>
-        </table>
-        <button
-          onclick="fetchAndDisplayEquipments()"
-          style="
-            padding: 8px 16px;
-            background-color: #333;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-          "
-        >
-          Show Equipments
-        </button>
-      </div>
-      <div class="show-equipments column">
-        <h4>Track Request</h4>
-        <div class="track-request">
-          <input
-            type="text"
-            id="requestIdInput"
-            placeholder="Enter Request ID"
-          />
-          <button onclick="trackRequest()">Track Request</button>
-        </div>
-        <div
-          class="request-info hidden"
-          id="requestInfo"
-          style="margin-top: 20px; padding: 10px; border: 1px solid #333"
-        >
-          <p>Request ID: <span id="reqId"></span></p>
-          <p>Date: <span id="reqDate"></span></p>
-          <p>Status: <span id="reqApproved"></span></p>
-        </div>
-      </div>
-      <div class="show-equipments column">
-        <h4>All Request</h4>
-        <button
-          onclick="showRequestsAll()"
-          style="
-            padding: 8px 16px;
-            background-color: #333;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-          "
-        >
-          Show Requests
-        </button>
-        <div id="requestInfo2" class="show-requests"></div>
-      </div>
-    </div>
-  </body>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const token = getCookie();
-      if (!token) {
-        window.location.href = "login.html";
-      }
-      const user = checkUser();
-      //   console.log(user);
 
-      console.log("Token Test");
-      show_current_user();
-    });
-  </script>
+    <div class="container">
+      <div class="header">
+        <h1>Welcome to CIF</h1>
+        <p>Your central hub for equipment booking and request tracking.</p>
+      </div>
+
+      <div class="card-container">
+        <div class="card">
+          <h2>Available Equipment</h2>
+          <p>Browse all available equipment and initiate a booking.</p>
+          <button onclick="fetchAndDisplayEquipments()" class="btn btn-primary">
+            Show Equipments
+          </button>
+          <div class="table-container">
+            <table id="equipmentTable">
+              <thead>
+                <tr>
+                  <th>Equipment Name</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="equipmentTableBody">
+                </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Track a Request</h2>
+          <p>Enter your Request ID to check its current status.</p>
+          <div class="track-request">
+            <input
+              type="text"
+              id="requestIdInput"
+              placeholder="Enter Request ID"
+            />
+            <button onclick="trackRequest()" class="btn btn-primary">
+              Track Request
+            </button>
+          </div>
+          <div class="request-info hidden" id="requestInfo">
+            <h3>Request Status</h3>
+            <p><strong>Request ID:</strong> <span id="reqId"></span></p>
+            <p><strong>Date:</strong> <span id="reqDate"></span></p>
+            <p><strong>Status:</strong> <span id="reqApproved"></span></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>My Booking History</h2>
+          <p>View all the equipment requests you have submitted.</p>
+          <button onclick="showRequestsAll()" class="btn btn-primary">
+            Show All My Requests
+          </button>
+          <div id="requestInfo2" class="show-requests">
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Use the corrected cookie function from our previous conversation
+        const token = getCookie("session_token"); 
+        if (!token) {
+          window.location.href = "login.html";
+        }
+        
+        // checkUser will handle redirects for faculty/staff
+        checkUser(); 
+        show_current_user();
+        
+        // --- AUTO-LOAD CONTENT ---
+        // Automatically load content when the page opens
+        fetchAndDisplayEquipments();
+        showRequestsAll();
+      });
+    </script>
+  </body>
 </html>

@@ -34,13 +34,19 @@ document
     const password = document.getElementById("passwordInput").value;
 
     try {
-      const response = await login(username, password);
-      if (getCookie() != null) {
-        return;
-      }
+      const response = await login(username, password); // 1. Call API, get new token
+
       if (response.message === "Cookie is set on the browser") {
-        setCookie(response.Token, response.Token);
-        window.location.href = "main.html"; // Redirect to main page or any other page
+
+        // --- THIS IS THE FIX ---
+        const oldToken = getCookie(); // 2. Get the name of the old token
+        if (oldToken) {
+          deleteCookie(oldToken); // 3. Delete the old cookie
+        }
+        // --- END FIX ---
+
+        setCookie(response.Token, response.Token); // 4. Set the new cookie
+        window.location.href = "main.html"; // 5. Redirect
       } else {
         alert("Login failed. Please check your credentials.");
       }
@@ -67,7 +73,7 @@ async function logout() {
     console.log("no active session");
     return;
   }
-  const response = await fetch("http://localhost:8000/logout", { 
+  const response = await fetch("http://localhost:8000/logout", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -100,7 +106,7 @@ async function show_current_user() {
 }
 async function fetchAndDisplayEquipments() {
   try {
-    const token = getCookie();
+    const token = getCookie("session_token"); // Use corrected cookie function
     const response = await fetch(
       "http://localhost:8000/show_all_equipments",
       {
@@ -129,22 +135,19 @@ async function fetchAndDisplayEquipments() {
 
       // Equipment name cell
       const nameCell = document.createElement("td");
-      nameCell.textContent = item.equipment_name.toUpperCase(); // Capitalize the name
-      nameCell.style.border = "1px solid #333";
-      nameCell.style.padding = "8px";
-      nameCell.style.fontWeight = "bold"; // Bold the name
+      nameCell.textContent = item.equipment_name.toUpperCase();
       row.appendChild(nameCell);
 
       // Book button cell
       const buttonCell = document.createElement("td");
-      buttonCell.style.border = "1px solid #333";
-      buttonCell.style.padding = "8px";
-
       const button = document.createElement("button");
       button.textContent = "Book";
-      button.style.padding = "5px 10px";
-      button.style.marginLeft = "10px"; // Add some spacing between name and button
-      button.onclick = () => bookEquipment(item.equipment_name); // Replace with actual booking logic
+      
+      // --- THIS IS THE IMPORTANT CHANGE ---
+      button.className = "book-button"; // Use the CSS class
+      // --- END OF CHANGE ---
+      
+      button.onclick = () => bookEquipment(item.equipment_name); 
       buttonCell.appendChild(button);
 
       row.appendChild(buttonCell);
@@ -898,7 +901,7 @@ async function showMyProjects() {
     data.message.forEach(project => {
       const funds = project.status === 'approved' ? `$${project.money}` : 'Not Allocated';
       const expiry = project.status === 'approved' ? (project.expiry_date || 'N/A') : 'N/A';
-      
+
       let statusColor = 'orange'; // Pending
       if (project.status === 'approved') statusColor = 'green';
       if (project.status === 'rejected') statusColor = 'red';
@@ -1021,7 +1024,7 @@ async function updateProjectId() {
     if (facultyId) {
       generatedId = `cif_${facultyId}`;
     }
-  } else if (projectType === "sponsored_project" || projectType === "industrial_consultancy" ) {
+  } else if (projectType === "sponsored_project" || projectType === "industrial_consultancy") {
     deptContainer.style.display = "none";
     generatedId = "";
     projectIdInput.readOnly = false;
