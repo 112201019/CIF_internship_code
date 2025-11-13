@@ -8,23 +8,44 @@ function setCookie(name, value, days = 1) {
   document.cookie = name + "=" + (value || "") + expires + "; path=/";
 }
 
-// Function to get the value of a cookie
+// FIXED: Returns the VALUE of the first cookie found
 function getCookie() {
   var cookies = document.cookie.split(";");
   for (var i = 0; i < cookies.length; i++) {
     var cookie = cookies[i].trim();
-    // Check if the cookie is not empty
     if (cookie) {
-      return cookie.split("=")[0];
+      // split("=")[1] gets the VALUE (the token)
+      // split("=")[0] gets the NAME (which was your bug)
+      const parts = cookie.split("=");
+      if (parts.length >= 2) {
+          return parts[1]; // Return the token value
+      }
     }
   }
   return null;
 }
-
 function deleteCookie(name) {
   document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
+// --- DATE FORMATTER HELPER ---
+function formatSlotTime(isoString) {
+  if (!isoString) return "N/A";
+  const startDate = new Date(isoString);
+  
+  // Calculate End Time (Assuming 1 hour duration per slot)
+  // If your slots are different (e.g., 30 mins), change 60 to 30
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); 
 
+  const options = { 
+    year: 'numeric', month: 'short', day: 'numeric', 
+    hour: '2-digit', minute: '2-digit' 
+  };
+  
+  const startStr = startDate.toLocaleDateString('en-US', options);
+  const endStr = endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  return `${startStr} - ${endStr}`;
+}
 document
   .getElementById("loginForm")
   .addEventListener("submit", async function (event) {
@@ -613,69 +634,38 @@ function rejectRequestStaff(requestId) {
 // Show all requests of the current user
 // Show all requests of the current user
 async function showRequestsAll() {
-  const token = getCookie();
-  const requestData = {
-    token: token,
-  };
+  const token = getCookie("cif_token");
+  if(!token) return;
 
   try {
-    // Fetch data from the server
-    const response = await fetch(
-      "http://localhost:8000/show_requests_student",
-      {
+    const response = await fetch("http://localhost:8000/show_requests_student", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token }),
       }
     );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch requests data");
-    }
-
     const data = await response.json();
-
-    // Get the container where the request information will be displayed
     const container = document.getElementById("requestInfo2");
+    if(container) {
+        container.innerHTML = "";
+        data.message.forEach((request) => {
+          const requestDiv = document.createElement("div");
+          requestDiv.classList.add("request-item");
+          
+          // Use the formatter here
+          const formattedTime = formatSlotTime(request.slot_time);
 
-    // Clear any existing content
-    container.innerHTML = "";
-
-    // Loop through each request item and create a div for it
-    data.message.forEach((request) => {
-      const requestDiv = document.createElement("div");
-      requestDiv.classList.add("request-item");
-
-      const requestIdPara = document.createElement("p");
-      requestIdPara.textContent = `Request ID: ${request.request_id}`;
-
-      const slotIdPara = document.createElement("p");
-      slotIdPara.textContent = `Slot ID: ${request.slot_id}`;
-
-      const equipmentIdPara = document.createElement("p");
-      equipmentIdPara.textContent = `Equipment ID: ${request.equipment_id}`;
-
-      const projIdPara = document.createElement("p");
-      projIdPara.textContent = `Project ID: ${request.proj_id}`;
-
-      const slotTimePara = document.createElement("p");
-      slotTimePara.textContent = `Slot Time: ${request.slot_time}`;
-
-      // Append all paragraphs to the requestDiv
-      requestDiv.appendChild(requestIdPara);
-      requestDiv.appendChild(slotIdPara);
-      requestDiv.appendChild(equipmentIdPara);
-      requestDiv.appendChild(projIdPara);
-      requestDiv.appendChild(slotTimePara);
-
-      // Append the requestDiv to the container
-      container.appendChild(requestDiv);
-    });
+          requestDiv.innerHTML = `
+            <p><strong>Request ID:</strong> ${request.request_id}</p>
+            <p><strong>Equipment ID:</strong> ${request.equipment_id}</p>
+            <p><strong>Time:</strong> ${formattedTime}</p>
+            <p style="font-size:0.9em; color:#666;">Project: ${request.proj_id}</p>
+          `;
+          container.appendChild(requestDiv);
+        });
+    }
   } catch (error) {
-    console.error("Error fetching request data:", error);
-    alert("Failed to fetch request data. Please try again later.");
+    console.error(error);
   }
 }
 

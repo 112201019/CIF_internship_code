@@ -571,3 +571,72 @@ def reject_project(db: PostgresqlDB, project_id: str):
     WHERE project_id = '{project_id}';
     """
     db.execute_ddl_and_dml_commands(query)
+
+from datetime import timedelta # Make sure to import this at the top
+
+def request_multiple_slots(db: PostgresqlDB, slot_id: int, project_id: str, count: int):
+    # 1. Get the equipment info and UNIT TIME for the start slot
+    # We need unit_time (e.g., 60 mins) to verify continuity
+    query_info = f"""
+        SELECT s.equipment_id, s.slot_time, e.unit_time
+        FROM slot s
+        JOIN equipment e ON s.equipment_id = e.equipment_id
+        WHERE s.slot_id = {slot_id}
+    """
+    info = list(db.execute_dql_commands(query_info))
+    
+    if not info:
+        print(f"DEBUG ERROR: Slot {slot_id} does not exist.")
+        raise ValueError("Start slot not found.")
+    
+    equip_id = str(info[0][0]).strip()
+    start_time = info[0][1]
+    unit_time_minutes = info[0][2]
+    
+    if not unit_time_minutes: 
+        unit_time_minutes = 60 # Default fallback
+        
+    slot_duration = timedelta(minutes=unit_time_minutes)
+
+    print(f"DEBUG: Checking {count} slots starting {start_time} (Duration: {unit_time_minutes}m)")
+
+    # 2. Fetch ALL free future slots to find our candidates
+    query_available = f"""
+        SELECT s.slot_id, s.slot_time
+        FROM slot s
+        WHERE s.equipment_id = '{equip_id}'
+        AND s.slot_status = 'free'
+        AND s.slot_time >= '{start_time}' -- Optimization: Don't fetch past slots
+        ORDER BY s.slot_time ASC
+    """
+    
+    # Get list of dicts for easier handling: [{'id': 1, 'time': datetime}, ...]
+    available_slots = [{'id': int(r[0]), 'time': r[1]} for r in db.execute_dql_commands(query_available)]
+    
+    # 3. Verify Strict Continuity
+    # We expect to find 'count' slots where each timestamp is exactly +unit_time from the previous
+    
+    if len(available_slots) < count:
+        raise ValueError(f"Not enough slots available. Wanted {count}, found {len(available_slots)}.")
+
+    # Check the first slot matches our requested ID
+    if available_slots[0]['id'] != slot_id:
+        raise ValueError("The starting slot is unavailable.")
+
+    # Loop through the required number of slots to check for time gaps
+    expected_time = start_time
+    for i in range(count):
+        current_slot = available_slots[i]
+        
+        # Time Check: Is this slot exactly at the expected time?
+        if current_slot['time'] != expected_time:
+            print(f"DEBUG GAP: Expected {expected_time}, found {current_slot['time']}")
+            raise ValueError(f"Consecutive slots are not available. (Gap detected at {expected_time})")
+            
+        # Prepare next expected time
+        expected_time += slot_duration
+
+    # 4. If we get here, the slots are perfectly consecutive and free. Book them.
+    query = f"call request_slot({slot_id}, '{project_id}', 0, {count})"
+    db.execute_ddl_and_dml_commands(query)
+    print("DEBUG: Consecutive booking successful.")

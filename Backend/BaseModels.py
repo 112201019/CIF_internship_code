@@ -65,14 +65,6 @@ class SearchQuery(BaseModel):
     user_type: str
     query: str
 
-# class EquipmentCreate(BaseModel):
-#     token: str
-#     equipment_id: str
-#     equipment_name: str
-#     location: str
-#     specifications: dict = {}
-#     staff_incharge: str
-
 class UpdateUser(BaseModel):
     token: str
     user_type: str
@@ -106,3 +98,11 @@ class ProjectCheck(BaseModel):
 class RejectProjectModel(BaseModel):
     token: str
     project_id: str
+
+# In BaseModels.py
+
+class MultiSlotRequest(BaseModel):
+    token: str
+    slot_id: int  # Changed back from start_slot_id
+    project_id: str
+    count: int

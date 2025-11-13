@@ -573,3 +573,27 @@ async def reject_project(data: RejectProjectModel):
         return {"message": "Project rejected successfully."}
     except Exception as err:
         return {"message": f"An error occurred: {str(err)}"}
+    
+# In API.py
+from BaseModels import MultiSlotRequest
+
+@app.post("/request_multiple_slots")
+async def request_multiple_slots(request: MultiSlotRequest):
+    try:
+        current_user = request.token
+        db = open_connection(current_user)
+        
+        database_handler.request_multiple_slots(
+            db, 
+            request.slot_id, # Changed from start_slot_id
+            request.project_id, 
+            request.count
+        )
+        
+        db = None 
+        return {"message": "success"}
+    except ValueError as ve:
+        return {"message": str(ve)}
+    except Exception as err:
+        print("error_multi_book", err)
+        return {"message": "ERROR: " + str(err)}
