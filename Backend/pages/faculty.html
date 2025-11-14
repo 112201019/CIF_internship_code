@@ -3,18 +3,80 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>CIF</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="faculty.css" />
+  <title>CIF Faculty Portal</title>
   <script src="main.js"></script>
   <script src="script.js"></script>
+  
+  <style>
+    /* --- GLOBAL STYLES --- */
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; }
+    h1, h2, h3 { color: #2c3e50; margin-top: 0; }
+    
+    /* --- NAVBAR --- */
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: #3498db; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    .user-menu { position: relative; cursor: pointer; font-weight: 600; }
+    .user-menu:hover .dropdown-content { display: block; }
+    .current-user { margin: 0; font-size: 16px; }
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #fff; min-width: 150px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; z-index: 100; }
+    .dropdown-content button { width: 100%; padding: 12px 16px; text-align: left; border: none; background: none; cursor: pointer; font-size: 14px; color: #333; transition: background 0.2s; }
+    .dropdown-content button:hover { background-color: #f1f1f1; }
+
+    /* --- LAYOUT --- */
+    .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+    
+    /* Grid for 2 rows of 2 cards each */
+    .grid-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 30px; margin-bottom: 40px; }
+
+    /* --- CARDS --- */
+    .card { background: #fff; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; }
+    .card h3 { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
+    .card p { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
+    
+    /* --- BUTTONS --- */
+    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background-color: #2980b9; color: white; }
+    .btn-success { background-color: #27ae60; color: white; }
+    .btn-info { background-color: #16a085; color: white; }
+    .btn-warning { background-color: #f39c12; color: white; }
+    .btn-block { width: 100%; display: block; margin-bottom: 10px; }
+
+    /* --- REQUEST ITEMS --- */
+    .request-list { flex: 1; max-height: 500px; overflow-y: auto; padding-right: 5px; }
+    .request-item { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; margin-bottom: 15px; position: relative; }
+    .req-header { display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; }
+    .req-actions { display: flex; gap: 10px; margin-top: 10px; }
+    
+    /* --- PROJECT ITEMS --- */
+    .project-item { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+    .project-header { font-weight: bold; color: #2c3e50; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
+    .status-pending { background-color: #f39c12; color: white; }
+    .status-approved { background-color: #27ae60; color: white; }
+    .status-rejected { background-color: #e74c3c; color: white; }
+    
+    /* --- MODAL --- */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+    .modal-content { background-color: #fff; margin: 5% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 20px; }
+    .close-button:hover { color: #000; }
+    
+    /* --- FORM ELEMENTS --- */
+    label { font-weight: 600; display: block; margin-bottom: 5px; color: #555; font-size: 0.9rem; }
+    input, textarea, select { width: 95%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
+    input[readonly] { background-color: #e9ecef; }
+    
+    /* Result message styling */
+    #projectAddResult { text-align: center; padding: 10px; border-radius: 4px; }
+  </style>
 </head>
 
 <body>
   <nav class="navbar">
     <div class="logo">CIF FACULTY PORTAL</div>
     <div class="user-menu">
-      <h3 class="current-user">User:</h3>
+      <h3 class="current-user">User: ...</h3>
       <div class="dropdown-content">
         <button onclick="show_current_user()">Profile</button>
         <button onclick="logout()">Logout</button>
@@ -22,57 +84,58 @@
     </div>
   </nav>
 
-  <div class="row">
-    <div class="column">
-      <h3>Requests For SuperVisor Role</h3>
-      <button onclick="showPendingRequestsSuper()" style="
-            padding: 8px 16px; background-color: #333; color: #fff;
-            border: none; cursor: pointer; margin-top: 10px; margin-bottom: 10px;">
-        Show Requests
-      </button>
-      <div id="showPendingSuper"></div>
+  <div class="container">
+    
+    <!-- First Row -->
+    <div class="grid-row">
+      
+      <div class="card" style="border-top: 4px solid #2980b9;">
+        <h3>Requests For Supervisor Role</h3>
+        <p>Review equipment requests from your supervised students.</p>
+        <button class="btn btn-primary btn-block" onclick="showPendingRequestsSuper()">Show Requests</button>
+        <div id="showPendingSuper" class="request-list" style="margin-top:15px;"></div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #16a085;">
+        <h3>Requests For Faculty Incharge Role</h3>
+        <p>Approve or reject requests for equipment you oversee.</p>
+        <button class="btn btn-info btn-block" onclick="showPendingRequestsIn()">Show Requests</button>
+        <div id="showPendingIn" class="request-list" style="margin-top:15px;"></div>
+      </div>
+
     </div>
-    <div class="column">
-      <h3>Requests For Faculty Incharge Role</h3>
-      <button onclick="showPendingRequestsIn()" style="
-            padding: 8px 16px; background-color: #333; color: #fff;
-            border: none; cursor: pointer; margin-top: 10px; margin-bottom: 10px;">
-        Show Requests
-      </button>
-      <div id="showPendingIn"></div>
+
+    <!-- Second Row -->
+    <div class="grid-row">
+      
+      <div class="card" style="border-top: 4px solid #27ae60;">
+        <h3>Add New Project</h3>
+        <p>Submit a new project request for admin approval.</p>
+        <button id="openProjectModalBtn" class="btn btn-success btn-block" onclick="openProjectModal()">
+          + Add New Project
+        </button>
+        <div id="projectAddResult" style="margin-top: 15px;"></div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #f39c12;">
+        <h3>My Project Status</h3>
+        <p>View the approval status and details of your submitted projects.</p>
+        <button class="btn btn-warning btn-block" onclick="showMyProjects()">Show My Projects</button>
+        <div id="myProjectsContainer" class="request-list" style="margin-top:15px;"></div>
+      </div>
+
     </div>
   </div>
 
-  <div class="row">
-    <div class="column">
-      <h3>Add New Project</h3>
-      <button id="openProjectModalBtn" onclick="openProjectModal()" style="
-          padding: 8px 16px; background-color: #007bff; color: #fff;
-          border: none; cursor: pointer; width: 95%;">
-        + Add New Project
-      </button>
-      <div id="projectAddResult" style="margin-top: 15px; font-weight: bold;"></div>
-    </div>
-
-    <div class="column">
-      <h3>My Project Status</h3>
-      <button onclick="showMyProjects()" style="
-          padding: 8px 16px; background-color: #333; color: #fff;
-          border: none; cursor: pointer; margin-top: 10px; margin-bottom: 10px;">
-        Show My Projects
-      </button>
-      <div id="myProjectsContainer" style="overflow-y: auto; max-height: 400px;"></div>
-    </div>
-  </div>
-
+  <!-- Modal for Adding Project -->
   <div id="addProjectModal" class="modal" onclick="closeModalIfOutside(event)">
     <div class="modal-content">
       <span class="close-button" id="closeProjectModalBtn" onclick="closeProjectModal()">&times;</span>
       <h3>Add New Project</h3>
       <form id="addProjectForm" onsubmit="addNewProject(event)">
         <div style="margin-bottom: 15px;">
-          <label for="project_type">Project Funding Type:</label><br />
-          <select id="project_type" name="project_type" required onchange="updateProjectId()" style="width: 95%; padding: 5px;">
+          <label for="project_type">Project Funding Type:</label>
+          <select id="project_type" name="project_type" required onchange="updateProjectId()" style="width: 95%; padding: 10px;">
             <option value="" disabled selected>-- Select a type --</option>
             <option value="department_fund">Department Fund</option>
             <option value="cif_credit">CIF Credit</option>
@@ -82,24 +145,22 @@
         </div>
 
         <div id="departmentContainer" style="margin-bottom: 15px; display: none;">
-          <label for="department_id">Select Department:</label><br />
-           <select id="department_id" name="department_id" onchange="updateProjectId()" style="width: 95%; padding: 5px;"></select>
+          <label for="department_id">Select Department:</label>
+          <select id="department_id" name="department_id" onchange="updateProjectId()" style="width: 95%; padding: 10px;"></select>
         </div>
 
         <div style="margin-bottom: 10px;">
-          <label for="project_title">Project Title:</label><br />
-          <input type="text" id="project_title" name="project_title" required style="width: 90%; padding: 5px;" />
+          <label for="project_title">Project Title:</label>
+          <input type="text" id="project_title" name="project_title" required style="width: 90%; padding: 10px;" />
         </div>
 
         <div style="margin-bottom: 15px;">
-          <label for="project_id">Project ID:</label><br>
-          <input type="text" id="project_id" name="project_id" readonly style="width: 90%; padding: 5px; background-color: #e9ecef;" />
-          <p id="projectIdPreview" style="font-family: monospace; color: #495057;"></p>
+          <label for="project_id">Project ID:</label>
+          <input type="text" id="project_id" name="project_id" readonly style="width: 90%; padding: 10px; background-color: #e9ecef;" />
+          <p id="projectIdPreview" style="font-family: monospace; color: #495057; margin: 5px 0 0 0; font-size: 0.9rem;"></p>
         </div>
 
-        <button type="submit" style="
-          padding: 8px 16px; background-color: #28a745; color: #fff;
-          border: none; cursor: pointer;">
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px;">
           Submit Project Request
         </button>
       </form>

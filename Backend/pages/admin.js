@@ -1,25 +1,37 @@
-
 // FIXED: Returns the VALUE of the first cookie found
 function getCookie() {
   var cookies = document.cookie.split(";");
   for (var i = 0; i < cookies.length; i++) {
     var cookie = cookies[i].trim();
     if (cookie) {
-      // split("=")[1] gets the VALUE (the token)
-      // split("=")[0] gets the NAME (which was your bug)
       const parts = cookie.split("=");
       if (parts.length >= 2) {
-          return parts[1]; // Return the token value
+          return parts[1];
       }
     }
   }
   return null;
 }
+
 function deleteCookie(name) {
   document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
 
-
+// NEW: Add the missing switchSection function
+function switchSection(button) {
+    activateButton(button);
+    const section = button.getAttribute('data-section');
+    
+    // Hide the toolbar for project approvals
+    const toolbar = document.getElementById('toolbar');
+    if (section === 'project_approval') {
+        if (toolbar) toolbar.style.display = 'none';
+        showProjectApprovals();
+    } else {
+        if (toolbar) toolbar.style.display = 'flex';
+        showSection(section);
+    }
+}
 
 async function showSection(section) {
     try {
@@ -42,7 +54,7 @@ async function showSection(section) {
         }
 
         const data = await response.json();
-        console.log('Received data:', data); // Debug log
+        console.log('Received data:', data);
 
         if (data.message && Array.isArray(data.message)) {
             displayData(section, data.message);
@@ -99,16 +111,16 @@ function displayData(section, data) {
     contentArea.innerHTML = html;
     window.currentSectionData = data
 }
-// New function to get item by index
+
 function editItemByIndex(section, index) {
     const item = window.currentSectionData[index];
-    // console.log('Editing item:', item); // Debug log
     if (item) {
         editItem(section, item);
     } else {
         displayError('Item not found');
     }
 }
+
 function getHeaders(section) {
     const headers = {
         student: ['ID', 'Name', 'Supervisor','Mail ID', 'Department', 'Password'],
@@ -172,7 +184,7 @@ function getRowData(section, item) {
 }
 
 function activateButton(button) {
-    document.querySelectorAll('.menu button').forEach(btn => {
+    document.querySelectorAll('.menu button, .menu-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     button.classList.add('active');
@@ -180,7 +192,7 @@ function activateButton(button) {
 
 async function search() {
     const searchInput = document.getElementById('searchInput').value.trim();
-    const currentSection = document.querySelector('.menu button.active')?.getAttribute('data-section');
+    const currentSection = document.querySelector('.menu button.active, .menu-btn.active')?.getAttribute('data-section');
     
     if (!currentSection) {
         displayError('Please select a section first');
@@ -217,14 +229,23 @@ async function search() {
 }
 
 function showAddForm() {
-    const currentSection = document.querySelector('.menu button.active')?.getAttribute('data-section');
-    if (!currentSection) {
-        displayError('Please select a section first');
+    const currentSection = document.querySelector('.menu button.active, .menu-btn.active')?.getAttribute('data-section');
+    
+    // Don't allow adding on project approval page
+    if (!currentSection || currentSection === 'project_approval') {
+        displayError('Please select a section first (Students, Faculty, Staff, or Equipment)');
         return;
     }
 
     const contentArea = document.getElementById('contentArea');
     contentArea.innerHTML = getAddForm(currentSection);
+    
+    // FIXED: Initialize pricing fields properly for equipment
+    if (currentSection === 'equipment') {
+        setTimeout(() => {
+            togglePricingFields();
+        }, 50);
+    }
 }
 
 function displayError(message) {
@@ -235,6 +256,7 @@ function displayError(message) {
         </div>
     `;
 }
+
 function goToUserLogin() {
     window.location.href = 'login.html';
 }
@@ -259,9 +281,50 @@ async function logout() {
   window.location.href = "login.html";
 }
 
-
-// Add getAddForm function
 function getAddForm(section) {
+    if (section === 'equipment') {
+        return `
+        <div class="form-container" style="max-width: 800px;">
+            <h2>Add New Equipment</h2>
+            <form id="addForm" onsubmit="handleAdd(event, 'equipment')">
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="form-group"><label>Equipment ID:</label> <input type="text" name="equipment_id" required></div>
+                    <div class="form-group"><label>Name:</label> <input type="text" name="equipment_name" required></div>
+                    <div class="form-group"><label>Location:</label> <input type="text" name="location" required></div>
+                    <div class="form-group"><label>Slot Duration (Min):</label> <input type="number" name="unit_time" value="60" required></div>
+                    <div class="form-group"><label>Staff ID:</label> <input type="text" name="staff_incharge_id" required></div>
+                    <div class="form-group"><label>Faculty ID:</label> <input type="text" name="faculty_incharge_id" required></div>
+                </div>
+
+                <hr style="margin: 20px 0;">
+
+                <div class="form-group">
+                    <label>Pricing Model:</label>
+                    <select id="pricing_type" onchange="togglePricingFields()" style="width:100%; padding:8px;">
+                        <option value="time_based">Type 2: Time Based (Rate per Slot)</option>
+                        <option value="feature_based">Type 1: Feature Based (Add-ons)</option>
+                    </select>
+                </div>
+
+                <div id="requirements_container" style="background:#f9f9f9; padding:10px; border:1px solid #ddd; margin-bottom:15px;">
+                    <h4>Cost Rules</h4>
+                    <div id="req_rows"></div>
+                    <button type="button" id="addReqBtn" onclick="addRequirementRow()" style="margin-top:10px; display:none;">+ Add Feature</button>
+                </div>
+
+                <div style="background:#f9f9f9; padding:10px; border:1px solid #ddd; margin-bottom:15px;">
+                    <h4>Extra Questions</h4>
+                    <div id="question_rows"></div>
+                    <button type="button" onclick="addQuestionRow()" style="margin-top:10px;">+ Add Question</button>
+                </div>
+
+                <button type="submit">Create Equipment</button>
+                <button type="button" onclick="cancelAdd()">Cancel</button>
+            </form>
+        </div>`;
+    }
+
     const fields = {
         student: [
             { id: 'student_id', label: 'Student ID', required: true },
@@ -270,7 +333,6 @@ function getAddForm(section) {
             { id: 'mail_id', label: 'Mail ID', required: true },
             { id: 'department', label: 'Department', required: true },
             { id: 'password', label: 'Password', type: 'password', required: true }
-
         ],
         faculty: [
             { id: 'faculty_id', label: 'Faculty ID', required: true },
@@ -285,13 +347,6 @@ function getAddForm(section) {
             { id: 'mail_id', label: 'Mail ID', required: true },
             { id: 'department', label: 'Department', required: true },
             { id: 'password', label: 'Password', type: 'password', required: true }
-        ],
-        equipment: [
-            { id: 'equipment_id', label: 'Equipment ID', required: true },
-            { id: 'equipment_name', label: 'Name', required: true },
-            { id: 'location', label: 'Location', required: true },
-            { id: 'staff_incharge_id', label: 'Staff In-charge', required: true },
-            { id: 'faculty_incharge_id', label: 'Faculty In-charge', required: true }
         ]
     };
 
@@ -305,49 +360,50 @@ function getAddForm(section) {
         html += `
             <div class="form-group">
                 <label for="${field.id}">${field.label}:</label>
-                <input 
-                    type="${field.type || 'text'}" 
-                    id="${field.id}" 
-                    name="${field.id}"
-                    ${field.required ? 'required' : ''}
-                >
-            </div>
-        `;
+                <input type="${field.type || 'text'}" id="${field.id}" name="${field.id}" ${field.required ? 'required' : ''}>
+            </div>`;
     });
 
-    html += `
-            <button type="submit">Add</button>
-            <button type="button" onclick="cancelAdd()">Cancel</button>
-        </form>
-        </div>
-    `;
-
+    html += `<button type="submit">Add</button><button type="button" onclick="cancelAdd()">Cancel</button></form></div>`;
     return html;
 }
 
-// Add handleAdd function
 async function handleAdd(event, section) {
     event.preventDefault();
-    const token = getCookie()
+    const token = getCookie();
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData.entries());
-    
-    // Convert section to singular for matching form field IDs
-    const singularSection = section.endsWith('s') ? section.slice(0, -1) : section;
-
     let requestBody;
 
     if (section === 'equipment') {
+        const requirements = [];
+        document.querySelectorAll('.req-row').forEach(row => {
+            requirements.push({
+                name: row.querySelector('.req-name').value,
+                cost: parseInt(row.querySelector('.req-cost').value),
+                type: row.querySelector('.req-type').value
+            });
+        });
+
+        const questions = [];
+        document.querySelectorAll('.q-text').forEach(input => {
+            if(input.value.trim()) questions.push(input.value.trim());
+        });
+
         requestBody = {
             token,
-            user_type: section,
+            user_type: 'equipment',
             equipment_id: data.equipment_id,
             equipment_name: data.equipment_name,
             location: data.location,
             staff_incharge_id: data.staff_incharge_id,
-            faculty_incharge_id: data.faculty_incharge_id
+            faculty_incharge_id: data.faculty_incharge_id,
+            unit_time: parseInt(data.unit_time || 60),
+            requirements: requirements,
+            questions: questions
         };
     } else {
+        const singularSection = section.endsWith('s') ? section.slice(0, -1) : section;
         requestBody = {
             token,
             user_type: section,
@@ -361,34 +417,27 @@ async function handleAdd(event, section) {
             }
         };
     }
-    
-    // console.log('Sending request:', requestBody);
-    
+
     try {
         const response = await fetch('http://localhost:8000/admin/create_user', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody)
         });
 
         const result = await response.json();
         if (result.message === 'success') {
-            showSuccessMessage('Added successfully');
+            alert('Added successfully');
             showSection(section);
         } else {
             throw new Error(result.message);
         }
     } catch (error) {
-        displayError(`Failed to add: ${error.message}`);
+        alert(`Failed to add: ${error.message}`);
     }
 }
 
-// Add editItem function
 async function editItem(section, item) {
-    console.log('Editing item:', item); // Debug log
-    console.log('Section:', section); // Debug log
     singularSection = section.endsWith('s') ? section.slice(0, -1) : section;
     const contentArea = document.getElementById('contentArea');
     const fields = {
@@ -450,7 +499,6 @@ async function editItem(section, item) {
     contentArea.innerHTML = html;
 }
 
-// Add handleEdit function
 async function handleEdit(event, section, id) {
     event.preventDefault();
     if (!id) {
@@ -462,7 +510,6 @@ async function handleEdit(event, section, id) {
     const formData = new FormData(event.target);
     const updates = {};
     
-    // Only include non-empty values
     for (let [key, value] of formData.entries()) {
         if (value.trim()) {
             updates[key] = value.trim();
@@ -495,8 +542,6 @@ async function handleEdit(event, section, id) {
     }
 }
 
-
-// Add utility functions
 function showSuccessMessage(message) {
     const contentArea = document.getElementById('contentArea');
     const successDiv = document.createElement('div');
@@ -507,72 +552,19 @@ function showSuccessMessage(message) {
 }
 
 function cancelAdd() {
-    const currentSection = document.querySelector('.menu button.active')?.getAttribute('data-section');
+    const currentSection = document.querySelector('.menu button.active, .menu-btn.active')?.getAttribute('data-section');
     if (currentSection) {
         showSection(currentSection);
     }
 }
+
 function cancelEdit() {
-    const currentSection = document.querySelector('.menu button.active')?.getAttribute('data-section');
+    const currentSection = document.querySelector('.menu button.active, .menu-btn.active')?.getAttribute('data-section');
     if (currentSection) {
         showSection(currentSection);
     }
 }
 
-// // Update editItem function to make fields optional
-// async function editItem(section, item) {
-//     const contentArea = document.getElementById('contentArea');
-//     const fields = {
-//         student: [
-//             {id: 'student_name', label: 'Name'},
-//             {id: 'department', label: 'Department'},
-//             {id: 'super_visor_id', label: 'Supervisor ID'}
-//         ],
-//         faculty: [
-//             {id: 'faculty_name', label: 'Name'}        ],
-//         staff: [
-//             {id: 'staff_name', label: 'Name'}
-//         ],
-//         equipment: [
-//             {id: 'equipment_name', label: 'Name'},
-//             {id: 'location', label: 'Location'},
-//             {id: 'staff_incharge', label: 'Staff In-charge'}
-//         ]
-//     };
-
-//     let html = `
-//         <div class="form-container">
-//             <h2>Edit ${section.charAt(0).toUpperCase() + section.slice(1)}</h2>
-//             <p class="note">* Leave fields empty to keep current values</p>
-//             <form id="editForm" onsubmit="handleEdit(event, '${section}', '${item[`${section}_id`]}')">
-//     `;
-
-//     fields[section].forEach(field => {
-//         html += `
-//             <div class="form-group">
-//                 <label for="${field.id}">${field.label}:</label>
-//                 <input 
-//                     type="${field.type || 'text'}" 
-//                     id="${field.id}" 
-//                     name="${field.id}"
-//                     value="${item[field.id] || ''}"
-//                 >
-//             </div>
-//         `;
-//     });
-
-//     html += `
-//             <button type="submit">Save Changes</button>
-//             <button type="button" onclick="cancelEdit()">Cancel</button>
-//         </form>
-//         </div>
-//     `;
-
-//     contentArea.innerHTML = html;
-// }
-
-
-// Update deleteItem function
 async function deleteItem(section, id) {
     if (!id) {
         displayError('Invalid ID');
@@ -608,8 +600,6 @@ async function deleteItem(section, id) {
         displayError(`Failed to delete: ${error.message}`);
     }
 }
-
-// Add these functions to the end of admin.js
 
 async function showProjectApprovals() {
     const token = getCookie();
@@ -690,7 +680,7 @@ async function handleApproval(event, projectId) {
         const result = await response.json();
         if (result.message.includes("successfully")) {
             showSuccessMessage(result.message);
-            showProjectApprovals(); // Refresh the list
+            showProjectApprovals();
         } else {
             throw new Error(result.message);
         }
@@ -699,12 +689,9 @@ async function handleApproval(event, projectId) {
     }
 }
 
-// Add this new function to the end of admin.js
-
 async function handleRejection(projectId) {
-    // Ask for confirmation before proceeding
     if (!confirm(`Are you sure you want to reject project ID: ${projectId}?`)) {
-        return; // Stop if the user clicks "Cancel"
+        return;
     }
 
     const token = getCookie();
@@ -726,7 +713,7 @@ async function handleRejection(projectId) {
         
         if (result.message.includes("successfully")) {
             showSuccessMessage(result.message);
-            showProjectApprovals(); // Refresh the list to remove the rejected project
+            showProjectApprovals();
         } else {
             throw new Error(result.message);
         }
@@ -735,3 +722,58 @@ async function handleRejection(projectId) {
     }
 }
 
+function togglePricingFields() {
+    const typeSelect = document.getElementById('pricing_type');
+    if (!typeSelect) {
+        console.error('pricing_type select not found');
+        return;
+    }
+    
+    const type = typeSelect.value;
+    const container = document.getElementById('req_rows');
+    const btn = document.getElementById('addReqBtn');
+    
+    if (!container || !btn) {
+        console.error('Required elements not found');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    if (type === 'time_based') {
+        btn.style.display = 'none';
+        container.innerHTML = `
+            <div class="req-row" style="display:flex; gap:5px; margin-bottom:5px;">
+                <input type="text" class="req-name" value="Standard Hourly Rate" readonly style="flex:2; background:#eee;">
+                <input type="number" class="req-cost" placeholder="Cost" required style="flex:1;">
+                <input type="hidden" class="req-type" value="per_slot">
+            </div>`;
+    } else {
+        btn.style.display = 'inline-block';
+        addRequirementRow();
+    }
+}
+
+function addRequirementRow() {
+    const div = document.createElement('div');
+    div.className = 'req-row';
+    div.style = "display:flex; gap:5px; margin-bottom:5px;";
+    div.innerHTML = `
+        <input type="text" placeholder="Feature Name" class="req-name" required style="flex:2;">
+        <input type="number" placeholder="Cost" class="req-cost" required style="flex:1;">
+        <input type="hidden" class="req-type" value="fixed">
+        <button type="button" onclick="this.parentElement.remove()" style="background:red; color:white; border:none;">X</button>
+    `;
+    document.getElementById('req_rows').appendChild(div);
+}
+
+function addQuestionRow() {
+    const div = document.createElement('div');
+    div.className = 'q-row';
+    div.style = "display:flex; gap:5px; margin-bottom:5px;";
+    div.innerHTML = `
+        <input type="text" placeholder="Question Text" class="q-text" required style="flex:1;">
+        <button type="button" onclick="this.parentElement.remove()" style="background:red; color:white; border:none;">X</button>
+    `;
+    document.getElementById('question_rows').appendChild(div);
+}

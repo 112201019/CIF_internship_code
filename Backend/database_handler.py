@@ -1,5 +1,5 @@
 import sqlalchemy
-
+import json
 # Database Utility Class
 from sqlalchemy.engine import create_engine
 
@@ -331,6 +331,17 @@ def show_projects(db: PostgresqlDB):
         result.append(record)
     return result
 
+def show_projects_approved(db: PostgresqlDB):
+    query = f"select p.project_id, p.project_title, p.faculty_incharge_id from project as p, student where p.faculty_incharge_id = student.super_visor_id and student.student_id = current_user and status = 'approved'"
+    r = list(db.execute_dql_commands(query))
+    result = []
+    fields = ["project_id", "project_title", "supervisor"]
+    for i in r:
+        record = {}
+        for j in range(len(i)):
+            record[fields[j]] = i[j]
+        result.append(record)
+    return result
 
 def get_ids_by_equipment_name(db: PostgresqlDB, equipment_name: str):
     query = f"select equipment_id, location from equipment where equipment_name = '{equipment_name}'"
@@ -345,19 +356,37 @@ def get_ids_by_equipment_name(db: PostgresqlDB, equipment_name: str):
     return result
 
 # 
-def create_equipment(db: PostgresqlDB, equipment_name: str, location: str, staff_incharge_id: str, faculty_incharge_id: str,equipment_id: str,):
+def create_equipment(db: PostgresqlDB, equipment_name: str, location: str, staff_incharge_id: str, faculty_incharge_id: str, equipment_id: str, unit_time: int = 60, requirements: list = [], questions: list = []):
+    
+    # 1. Insert into main Equipment table
     query = f"""
-    INSERT INTO equipment (equipment_id, equipment_name, location, staff_incharge_id, faculty_incharge_id) 
+    INSERT INTO equipment (equipment_id, equipment_name, location, staff_incharge_id, faculty_incharge_id, unit_time) 
     VALUES (
         '{equipment_id}', 
         '{equipment_name}', 
         '{location}', 
         '{staff_incharge_id}', 
-        '{faculty_incharge_id}'
+        '{faculty_incharge_id}',
+        {unit_time}
     )
     """
-    # print(f"Executing query: {query}")
     db.execute_ddl_and_dml_commands(query)
+
+    # 2. Insert Requirements (Cost Rules)
+    for req in requirements:
+        q_req = f"""
+        INSERT INTO equipment_requirements (equipment_id, requirement_name, cost, cost_type)
+        VALUES ('{equipment_id}', '{req['name']}', {req['cost']}, '{req['type']}')
+        """
+        db.execute_ddl_and_dml_commands(q_req)
+
+    # 3. Insert Questions
+    for q_text in questions:
+        q_question = f"""
+        INSERT INTO additional_info_questions (equipment_id, question_text)
+        VALUES ('{equipment_id}', '{q_text}')
+        """
+        db.execute_ddl_and_dml_commands(q_question)
 
 def create_user(db: PostgresqlDB, user_type: str, user_id: str, name: str, mail_id: str, department: str, password: str, additional_info: dict = None):
     if user_type == "student":
@@ -574,13 +603,13 @@ def reject_project(db: PostgresqlDB, project_id: str):
 
 from datetime import timedelta # Make sure to import this at the top
 
-def request_multiple_slots(db: PostgresqlDB, slot_id: int, project_id: str, count: int):
-    # 1. Get the equipment info and UNIT TIME for the start slot
-    # We need unit_time (e.g., 60 mins) to verify continuity
+# import json # Ensure this is imported at the top
+
+def request_multiple_slots(db: PostgresqlDB, slot_id: int, project_id: str, count: int, request_data: str):
+    # 1. Get the equipment info for the start slot
     query_info = f"""
-        SELECT s.equipment_id, s.slot_time, e.unit_time
+        SELECT s.equipment_id, s.slot_time
         FROM slot s
-        JOIN equipment e ON s.equipment_id = e.equipment_id
         WHERE s.slot_id = {slot_id}
     """
     info = list(db.execute_dql_commands(query_info))
@@ -591,52 +620,128 @@ def request_multiple_slots(db: PostgresqlDB, slot_id: int, project_id: str, coun
     
     equip_id = str(info[0][0]).strip()
     start_time = info[0][1]
-    unit_time_minutes = info[0][2]
-    
-    if not unit_time_minutes: 
-        unit_time_minutes = 60 # Default fallback
-        
-    slot_duration = timedelta(minutes=unit_time_minutes)
 
-    print(f"DEBUG: Checking {count} slots starting {start_time} (Duration: {unit_time_minutes}m)")
-
-    # 2. Fetch ALL free future slots to find our candidates
+    # 2. Check consecutiveness
     query_available = f"""
-        SELECT s.slot_id, s.slot_time
+        SELECT s.slot_id
         FROM slot s
         WHERE s.equipment_id = '{equip_id}'
         AND s.slot_status = 'free'
-        AND s.slot_time >= '{start_time}' -- Optimization: Don't fetch past slots
+        AND s.slot_time >= '{start_time}'
         ORDER BY s.slot_time ASC
     """
     
-    # Get list of dicts for easier handling: [{'id': 1, 'time': datetime}, ...]
-    available_slots = [{'id': int(r[0]), 'time': r[1]} for r in db.execute_dql_commands(query_available)]
+    available_slots = [int(r[0]) for r in db.execute_dql_commands(query_available)]
     
-    # 3. Verify Strict Continuity
-    # We expect to find 'count' slots where each timestamp is exactly +unit_time from the previous
-    
-    if len(available_slots) < count:
-        raise ValueError(f"Not enough slots available. Wanted {count}, found {len(available_slots)}.")
-
-    # Check the first slot matches our requested ID
-    if available_slots[0]['id'] != slot_id:
+    try:
+        start_index = available_slots.index(slot_id)
+    except ValueError:
+        print(f"DEBUG FAILURE: Slot {slot_id} was NOT found in the 'free' list.")
         raise ValueError("The starting slot is unavailable.")
 
-    # Loop through the required number of slots to check for time gaps
-    expected_time = start_time
-    for i in range(count):
-        current_slot = available_slots[i]
-        
-        # Time Check: Is this slot exactly at the expected time?
-        if current_slot['time'] != expected_time:
-            print(f"DEBUG GAP: Expected {expected_time}, found {current_slot['time']}")
-            raise ValueError(f"Consecutive slots are not available. (Gap detected at {expected_time})")
-            
-        # Prepare next expected time
-        expected_time += slot_duration
+    if start_index + count > len(available_slots):
+        raise ValueError(f"Not enough consecutive slots available.")
 
-    # 4. If we get here, the slots are perfectly consecutive and free. Book them.
-    query = f"call request_slot({slot_id}, '{project_id}', 0, {count})"
+    # --- 3. CALCULATE TOTAL COST ---
+    total_cost = 0
+    print(f"--- START COST CALCULATION for {equip_id} ---")
+    
+    # A. Parse the User's Choices safely
+    selected_reqs = []
+    try:
+        if request_data:
+            user_data = json.loads(request_data)
+            # Check if user_data is actually a dict and not None
+            if isinstance(user_data, dict):
+                selected_reqs = user_data.get("requirements", [])
+    except Exception as e:
+        print(f"DEBUG WARNING: JSON Parse Error: {e}")
+        selected_reqs = []
+
+    print(f"DEBUG: User selected requirements: {selected_reqs}")
+
+    # B. Get Pricing Rules from Database
+    query_pricing = f"""
+        SELECT requirement_name, cost, cost_type 
+        FROM equipment_requirements 
+        WHERE equipment_id = '{equip_id}'
+    """
+    pricing_rules = list(db.execute_dql_commands(query_pricing))
+    
+    # C. Apply Rules with Safety Checks
+    for rule in pricing_rules:
+        req_name = str(rule[0]).strip() # Remove spaces just in case
+        # FIX: Handle NULL costs by treating them as 0
+        raw_cost = rule[1]
+        cost = int(raw_cost) if raw_cost is not None else 0
+        cost_type = rule[2]
+        
+        if cost_type == 'per_slot':
+            # Formula: Rate * Count
+            rule_total = cost * count
+            total_cost += rule_total
+            print(f"  + Adding PER SLOT cost: {req_name} ({cost} * {count} slots) = {rule_total}")
+            
+        elif cost_type == 'fixed':
+            # Formula: Fixed Cost if selected
+            if req_name in selected_reqs:
+                total_cost += cost
+                print(f"  + Adding FIXED cost: {req_name} = {cost}")
+            else:
+                print(f"  - Skipping unselected fixed cost: {req_name}")
+
+    print(f"DEBUG: Final Total Cost: {total_cost}")
+    print("-------------------------------------------")
+
+    # --- 4. Call the Procedure ---
+    query = f"call request_slot({slot_id}, '{project_id}', {total_cost}, {count}, '{request_data}')"
+    
     db.execute_ddl_and_dml_commands(query)
-    print("DEBUG: Consecutive booking successful.")
+    print("DEBUG: Procedure called successfully.")
+
+# 1. NEW FUNCTION: Fetch form fields for an equipment
+def get_equipment_requirements(db: PostgresqlDB, equipment_id: str):
+    # Get Cost Rules (Type 1 & 2)
+    query_reqs = f"""
+        SELECT requirement_name, cost, cost_type 
+        FROM equipment_requirements 
+        WHERE equipment_id = '{equipment_id}'
+    """
+    reqs = list(db.execute_dql_commands(query_reqs))
+    
+    # Get Text Questions
+    query_questions = f"""
+        SELECT question_text 
+        FROM additional_info_questions 
+        WHERE equipment_id = '{equipment_id}'
+    """
+    questions = list(db.execute_dql_commands(query_questions))
+    
+    return {
+        "requirements": [{"name": r[0], "cost": r[1], "type": r[2]} for r in reqs],
+        "questions": [q[0] for q in questions]
+    }
+
+# In database_handler.py
+
+def manual_fund_deduction(db: PostgresqlDB, project_id: str, amount: int, reason: str):
+    # 1. Check if project exists first
+    check_query = f"SELECT money FROM project WHERE project_id = '{project_id}'"
+    result = list(db.execute_dql_commands(check_query))
+    
+    if not result:
+        raise ValueError(f"Project '{project_id}' does not exist.")
+    
+    current_balance = result[0][0]
+    
+    # 2. Perform Deduction
+    # Note: We allow negative balance if necessary, or you can add a check here.
+    query = f"""
+    UPDATE project 
+    SET money = money - {amount}
+    WHERE project_id = '{project_id}'
+    """
+    db.execute_ddl_and_dml_commands(query)
+    
+    # Optional: You could log this 'reason' to a transaction table here if you had one.
+    print(f"Deducted {amount} from {project_id}. Reason: {reason}")

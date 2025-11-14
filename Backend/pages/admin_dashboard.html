@@ -2,36 +2,215 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="admin.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIF Admin Dashboard</title>
+    <script src="admin.js"></script>
+    <style>
+        /* --- GLOBAL RESET & FONTS --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f0f2f5; 
+            color: #333; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        /* --- NAVBAR --- */
+        .navbar { 
+            background-color: #2c3e50; 
+            color: white; 
+            padding: 0 2rem; 
+            height: 60px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            flex-shrink: 0; 
+        }
+        .logo { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
+        .logout-btn { 
+            background: #e74c3c; 
+            border: none; 
+            color: white; 
+            padding: 8px 16px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: background 0.2s; 
+        }
+        .logout-btn:hover { background: #c0392b; }
+
+        /* --- MAIN LAYOUT --- */
+        .container { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden;
+        }
+        
+        /* --- SIDEBAR --- */
+        .sidebar { 
+            width: 260px; 
+            background: white; 
+            border-right: 1px solid #e0e0e0; 
+            padding: 1.5rem; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            flex-shrink: 0; 
+        }
+        .menu-btn { 
+            width: 100%; 
+            padding: 12px 15px; 
+            text-align: left; 
+            background: none; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            color: #555; 
+            font-size: 15px; 
+            font-weight: 500; 
+            transition: all 0.2s; 
+        }
+        .menu-btn:hover { background-color: #f8f9fa; color: #2c3e50; }
+        .menu-btn.active { 
+            background-color: #3498db; 
+            color: white; 
+            font-weight: 600; 
+            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3); 
+        }
+        .divider { border: 0; border-top: 1px solid #eee; margin: 5px 0; }
+
+        /* --- CONTENT AREA --- */
+        .main-content { 
+            flex: 1; 
+            padding: 2rem; 
+            overflow-y: auto;
+        }
+        
+        /* --- TOOLBAR --- */
+        .toolbar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
+        .search-box { display: flex; gap: 10px; flex: 1; max-width: 400px; }
+        .search-box input { 
+            flex: 1; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            outline: none; 
+        }
+        .action-btn { 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: 600; 
+        }
+        .action-btn:hover { background: #219150; }
+
+        /* --- DYNAMIC TABLES --- */
+        .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .data-table th { background-color: #f8f9fa; color: #555; font-weight: 600; text-transform: uppercase; font-size: 13px; padding: 15px; text-align: left; border-bottom: 2px solid #eee; }
+        .data-table td { padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; color: #444; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover { background-color: #fafafa; }
+
+        /* --- ACTION BUTTONS IN TABLE --- */
+        .actions button { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 5px; color: white; }
+        .actions button:first-child { background: #f39c12; }
+        .actions button:last-child { background: #e74c3c; }
+        .actions button:hover { opacity: 0.9; }
+
+        /* --- FORMS --- */
+        .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; }
+        .form-container h2 { margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .form-container button { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            margin-right: 10px;
+        }
+        .form-container button[type="submit"] { background: #27ae60; color: white; }
+        .form-container button[type="button"] { background: #6c757d; color: white; }
+        .form-container button:hover { opacity: 0.9; }
+        
+        /* --- MESSAGES --- */
+        .error-message { background: #fee; color: #c0392b; padding: 15px; border-radius: 4px; margin-top: 20px; border: 1px solid #f5c6cb; text-align: center; }
+        .success-message { background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-top: 20px; border: 1px solid #c3e6cb; text-align: center; animation: fadeOut 3s forwards; }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        /* --- UTILS --- */
+        .no-data { text-align: center; color: #888; padding: 40px !important; font-style: italic; }
+        .note { color: #666; font-style: italic; margin-bottom: 15px; }
+    </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">Admin Dashboard</div>
-        <button onclick="logout()">Logout</button>
+        <div class="logo">CIF Admin Portal</div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
     </nav>
 
     <div class="container">
-        <div class="menu">
-            <button data-section="student" onclick="activateButton(this); showSection('student')">Manage Students</button>
-            <button data-section="faculty" onclick="activateButton(this); showSection('faculty')">Manage Faculty</button>
-            <button data-section="staff" onclick="activateButton(this); showSection('staff')">Manage Staff</button>
-            <button data-section="equipment" onclick="activateButton(this); showSection('equipment')">Manage Equipment</button>
-            <button data-section="project_approval" onclick="activateButton(this); showProjectApprovals()">Project Approvals</button>
-        </div>
+        <aside class="sidebar">
+            <button class="menu-btn" data-section="student" onclick="switchSection(this)">Manage Students</button>
+            <button class="menu-btn" data-section="faculty" onclick="switchSection(this)">Manage Faculty</button>
+            <button class="menu-btn" data-section="staff" onclick="switchSection(this)">Manage Staff</button>
+            <button class="menu-btn" data-section="equipment" onclick="switchSection(this)">Manage Equipment</button>
+            <hr class="divider">
+            <button class="menu-btn" data-section="project_approval" onclick="switchSection(this)">Project Approvals</button>
+        </aside>
 
-        <div class="search-section">
-            <input type="text" id="searchInput" placeholder="Search...">
-            <button onclick="search()">Search</button>
-        </div>
+        <main class="main-content">
+            <div id="toolbar" class="toolbar">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search by ID or Name...">
+                    <button class="action-btn" style="background:#34495e;" onclick="search()">Search</button>
+                </div>
+                <button class="action-btn" onclick="showAddForm()">+ Add New</button>
+            </div>
 
-        <div class="add-section">
-            <button onclick="showAddForm()">Add New</button>
-        </div>
-
-        <div id="contentArea"></div>
+            <div id="contentArea">
+                <p style="text-align:center; color:#777; margin-top:50px;">Select an option from the sidebar to begin.</p>
+            </div>
+        </main>
     </div>
-    <!-- <script src="script.js"></script> -->
-    <script src="admin.js"></script>
+    
+    <script>
+        // Initialize: Check login and load default section
+        window.addEventListener("load", () => {
+            const token = getCookie(); 
+            if(!token) {
+                window.location.href = 'login.html';
+            } else {
+                // Default to Students view
+                const defaultBtn = document.querySelector('button[data-section="student"]');
+                if(defaultBtn) {
+                    console.log('Initializing with student section');
+                    switchSection(defaultBtn);
+                }
+            }
+        });
+    </script>
 </body>
 </html>

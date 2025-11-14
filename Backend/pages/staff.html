@@ -1,81 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <title>CIF</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="faculty.css" />
+  <title>CIF Staff Portal</title>
   <script src="script.js"></script>
-  <script src="main.js"></script>
+  
+  <style>
+    /* --- GLOBAL STYLES --- */
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; }
+    h1, h2, h3 { color: #2c3e50; margin-top: 0; }
+    
+    /* --- NAVBAR --- */
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: #e67e22; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    .user-menu { position: relative; cursor: pointer; font-weight: 600; }
+    .user-menu:hover .dropdown-content { display: block; }
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #fff; min-width: 150px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; z-index: 100; }
+    .dropdown-content button { width: 100%; padding: 12px 16px; text-align: left; border: none; background: none; cursor: pointer; font-size: 14px; color: #333; transition: background 0.2s; }
+    .dropdown-content button:hover { background-color: #f1f1f1; }
+
+    /* --- LAYOUT --- */
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    
+    /* We change the grid to fit 3 cards nicely */
+    .grid-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; margin-bottom: 40px; }
+
+    /* --- CARDS --- */
+    .card { background: #fff; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; }
+    .card h3 { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
+    .card p { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
+    
+    /* --- BUTTONS --- */
+    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background-color: #d35400; color: white; }
+    .btn-success { background-color: #27ae60; color: white; }
+    .btn-danger { background-color: #c0392b; color: white; }
+    .btn-warning { background-color: #f39c12; color: white; }
+    .btn-block { width: 100%; display: block; margin-bottom: 10px; }
+
+    /* --- REQUEST ITEMS --- */
+    .request-list { flex: 1; max-height: 500px; overflow-y: auto; padding-right: 5px; }
+    .request-item { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; margin-bottom: 15px; position: relative; }
+    .req-header { display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; }
+    .req-details { font-size: 13px; color: #555; background: #fff; padding: 10px; border-radius: 4px; margin: 10px 0; border: 1px solid #eee; }
+    .req-actions { display: flex; gap: 10px; margin-top: 10px; }
+    
+    /* --- FORM ELEMENTS --- */
+    label { font-weight: 600; display: block; margin-bottom: 5px; color: #555; font-size: 0.9rem; }
+    input, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+    .form-group { margin-bottom: 10px; }
+  </style>
 </head>
 
 <body>
   <nav class="navbar">
-    <div class="logo">CIF FACULTY PORTAL</div>
+    <div class="logo">CIF STAFF</div>
     <div class="user-menu">
-      <h3 class="current-user">User:</h3>
+      <h3 class="current-user">User: ...</h3>
       <div class="dropdown-content">
         <button onclick="show_current_user()">Profile</button>
         <button onclick="logout()">Logout</button>
       </div>
     </div>
   </nav>
-  <div class="row">
-    <div class="column">
-      <h3>Requests For Staff Role</h3>
-      <button onclick="showPendingRequestsStaff()" style="
-            padding: 8px 16px;
-            background-color: #333;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-            margin-bottom: 10px;
-          ">
-        Show Requests
-      </button>
-      <div id="showPendingStaff"></div>
-    </div>
-    <div class="row">
 
-      <div class="column">
-        <h3>Add New Equipment Slot</h3>
-        <p>Create new available slots for a piece of equipment.</p>
-
-        <form id="insertSlotForm">
-          <div class="form-group">
-            <label for="equipmentId">Equipment ID:</label>
-            <input type="text" id="equipmentId" name="equipmentId" required placeholder="e.g., EQ001" />
-          </div>
-
-          <div class="form-group">
-            <label for="startTime">Start of Time Range:</label>
-            <input type="datetime-local" id="startTime" name="startTime" required />
-          </div>
-
-          <div class="form-group">
-            <label for="endTime">End of Time Range:</label>
-            <input type="datetime-local" id="endTime" name="endTime" required />
-          </div>
-
-          <button onclick="handleAddSlot(event)" type="submit">Create Slots</button>
-        </form>
-
-        <div id="responseMessage" style="margin-top: 15px"></div>
+  <div class="container">
+    
+    <div class="grid-row">
+      
+      <div class="card" style="border-top: 4px solid #d35400;">
+        <h3>Pending Approvals</h3>
+        <p>Review and finalize equipment requests.</p>
+        <button class="btn btn-primary btn-block" onclick="showPendingRequestsStaff()">Refresh Requests</button>
+        <div id="showPendingStaff" class="request-list" style="margin-top:15px;"></div>
       </div>
+
+      <div class="card" style="border-top: 4px solid #27ae60;">
+        <h3>Create Equipment Slots</h3>
+        <p>Generate new booking slots for machines.</p>
+        
+        <form id="insertSlotForm" style="margin-top:auto;">
+          <div class="form-group"><label>Equipment ID</label><input type="text" id="equipmentId" required placeholder="e.g. me101" /></div>
+          <div class="form-group"><label>Start Date & Time</label><input type="datetime-local" id="startTime" required /></div>
+          <div class="form-group"><label>End Date & Time</label><input type="datetime-local" id="endTime" required /></div>
+          <button onclick="handleAddSlot(event)" class="btn btn-success btn-block">Generate Slots</button>
+        </form>
+        <div id="responseMessage" style="margin-top: 15px; text-align:center; font-weight:bold; font-size:0.9rem;"></div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #f39c12;">
+        <h3>Extra Charges</h3>
+        <p>Manually deduct funds for consumables or damages.</p>
+        
+        <form onsubmit="handleManualDeduct(event)" style="margin-top:auto;">
+          <div class="form-group">
+            <label>Project ID</label>
+            <input type="text" id="deduct_pid" required placeholder="e.g. P_123" />
+          </div>
+          <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="deduct_amt" required min="1" placeholder="Amount to deduct" />
+          </div>
+          <div class="form-group">
+            <label>Reason</label>
+            <textarea id="deduct_reason" rows="2" required placeholder="e.g. Broken beaker, Extra cleaning"></textarea>
+          </div>
+          <button type="submit" class="btn btn-warning btn-block">Deduct Funds</button>
+        </form>
+        <div id="deductResult" style="margin-top: 15px; text-align:center; font-weight:bold; font-size:0.9rem;"></div>
+      </div>
+
     </div>
   </div>
-</body>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const token = getCookie();
-    if (!token) {
-      window.location.href = "login.html";
-    }
-    console.log("Token Test");
-    show_current_user();
-  });
-</script>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const token = getCookie("session_token");
+      if (!token) {
+        window.location.href = "login.html";
+        return;
+      }
+      show_current_user();
+      showPendingRequestsStaff();
+    });
+
+    // --- 1. REQUEST PARSING ---
+    function parseRequestDetails(jsonString) {
+        if (!jsonString) return "<em>No details.</em>";
+        try {
+            const data = JSON.parse(jsonString);
+            let html = "";
+            if (data.requirements && data.requirements.length > 0) {
+                html += `<strong>Reqs:</strong> ${data.requirements.join(", ")}<br>`;
+            }
+            if (data.answers && Object.keys(data.answers).length > 0) {
+                html += `<div style="margin-top:5px;"><strong>Info:</strong><ul style="margin:5px 0 0 20px; padding:0;">`;
+                for (const [q, a] of Object.entries(data.answers)) {
+                    html += `<li><span style="color:#666;">${q}:</span> ${a}</li>`;
+                }
+                html += `</ul></div>`;
+            }
+            return html || "<em>No details.</em>";
+        } catch (e) { return "<em>Error.</em>"; }
+    }
+
+    // --- 2. FETCH REQUESTS ---
+    function showPendingRequestsStaff() {
+      const token = getCookie();
+      const container = document.getElementById("showPendingStaff");
+      container.innerHTML = "<p>Loading...</p>";
+
+      fetch("http://localhost:8000/show_requests_staff_incharge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      })
+      .then(r => r.json())
+      .then(data => {
+        container.innerHTML = "";
+        if(!data.message || data.message.length === 0) {
+            container.innerHTML = "<p style='color:#777; text-align:center; padding:20px;'>No pending requests.</p>";
+            return;
+        }
+
+        data.message.forEach(req => {
+          const div = document.createElement("div");
+          div.className = "request-item";
+          const detailsHtml = parseRequestDetails(req.request_data);
+          const timeStr = req.slot_time ? new Date(req.slot_time).toLocaleString() : "N/A";
+
+          div.innerHTML = `
+            <div class="req-header">
+                <span>#${req.request_id} - ${req.equipment_name}</span>
+                <span style="color:#d35400;">${timeStr}</span>
+            </div>
+            <div style="font-size:0.9rem;">
+                <p><strong>Student:</strong> ${req.student_id || 'Unknown'}</p>
+                <p><strong>Project:</strong> ${req.proj_id}</p>
+                <p><strong>Duration:</strong> ${req.slot_count || 1} Slots &nbsp;|&nbsp; <strong>Cost:</strong> ${req.cost || 0}</p>
+            </div>
+            <div class="req-details">${detailsHtml}</div>
+            <div class="req-actions">
+                <button class="btn btn-success" style="flex:1;" onclick="decideStaff(${req.request_id}, 'approved')">Approve</button>
+                <button class="btn btn-danger" style="flex:1;" onclick="decideStaff(${req.request_id}, 'rejected')">Reject</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      });
+    }
+
+    function decideStaff(id, decision) {
+        const token = getCookie();
+        fetch("http://localhost:8000/decide_by_staff_incharge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, request_id: id, decision }),
+        }).then(r => r.json()).then(d => {
+            alert(d.message || "Processed");
+            showPendingRequestsStaff();
+        });
+    }
+
+    // --- 3. MANUAL FUND DEDUCTION ---
+    async function handleManualDeduct(e) {
+        e.preventDefault();
+        const token = getCookie();
+        const pid = document.getElementById("deduct_pid").value.trim();
+        const amt = document.getElementById("deduct_amt").value;
+        const reason = document.getElementById("deduct_reason").value.trim();
+        const resDiv = document.getElementById("deductResult");
+
+        resDiv.innerText = "Processing...";
+        resDiv.style.color = "black";
+
+        try {
+            const response = await fetch("http://localhost:8000/manual_deduct_funds", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token, project_id: pid, amount: parseInt(amt), reason }),
+            });
+            const data = await response.json();
+            
+            if (data.message.includes("success")) {
+                resDiv.style.color = "green";
+                resDiv.innerText = "Deducted Successfully!";
+                e.target.reset();
+            } else {
+                resDiv.style.color = "red";
+                resDiv.innerText = data.message;
+            }
+        } catch (err) {
+            resDiv.style.color = "red";
+            resDiv.innerText = "Error: " + err.message;
+        }
+    }
+  </script>
+</body>
 </html>

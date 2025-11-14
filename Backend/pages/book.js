@@ -1,6 +1,6 @@
-let selectedProjectID = null;
+let selectedProjectID = null; 
 
-// --- FIXED COOKIE FUNCTION ---
+// --- COOKIE & HELPER FUNCTIONS ---
 function setCookie(name, value, days = 1) {
   var expires = "";
   if (days) {
@@ -18,7 +18,7 @@ function getCookie() {
     if (cookie) {
       const parts = cookie.split("=");
       if (parts.length >= 2) {
-        return parts[1]; // Returns the Value (Token)
+          return parts[1]; 
       }
     }
   }
@@ -29,105 +29,95 @@ function deleteCookie(name) {
   document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
 
-// --- ADD THE SAME HELPER AT THE TOP ---
 function formatSlotTime(isoString) {
   if (!isoString) return "N/A";
   const startDate = new Date(isoString);
-
-  const options = {
-    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  };
-
-  const startStr = startDate.toLocaleDateString('en-US', options);
-
-  return `${startStr}`;
+  const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+  const timeOptions = { hour: '2-digit', minute: '2-digit' };
+  const dateStr = startDate.toLocaleDateString('en-US', dateOptions);
+  const startStr = startDate.toLocaleTimeString('en-US', timeOptions);
+  return `${dateStr} | ${startStr}`;
 }
 
 function getURLParameter(name) {
-  return (
-    decodeURIComponent(
-      (new RegExp("[?|&]" + name + "=" + "([^&;]+?)(&|#|;|$)").exec(
-        location.search
-      ) || [null, ""])[1].replace(/\+/g, "%20")
-    ) || null
-  );
+  return decodeURIComponent((new RegExp("[?|&]" + name + "=" + "([^&;]+?)(&|#|;|$)").exec(location.search) || [null, ""])[1].replace(/\+/g, "%20")) || null;
 }
 
 // --- FETCH PROJECTS ---
 async function fetchAndDisplayProjects() {
   const token = getCookie();
   const container = document.getElementById("projectTable");
-
   if (!token) return;
 
   try {
-    const response = await fetch("http://localhost:8000/show_projects", {
+    const response = await fetch("http://localhost:8000/show_projects_approved", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     });
-
-    if (!response.ok) throw new Error("Failed to fetch projects");
-
+    
+    if(!response.ok) throw new Error("Failed");
     const data = await response.json();
+    
     if (!data.message || data.message.length === 0) {
-      container.innerHTML = "<p>You have no active projects available for booking.</p>";
+      container.innerHTML = "<p>No active projects found.</p>";
       return;
     }
 
     let tableHTML = `
       <table id="projectTable">
         <thead>
-          <tr>
-            <th>Project ID</th>
-            <th>Project Title</th>
-            <th>Supervisor</th>
-            <th>Action</th>
-          </tr>
+          <tr><th>Project ID</th><th>Title</th><th>Supervisor</th><th>Action</th></tr>
         </thead>
         <tbody>
     `;
-
     data.message.forEach((project) => {
       tableHTML += `
         <tr id="project-row-${project.project_id}">
-          <td>${project.project_id}</td>
-          <td>${project.project_title}</td>
-          <td>${project.supervisor}</td>
-          <td>
-            <button class="select-project-btn" onclick="selectProject('${project.project_id}')">
-              Select
-            </button>
-          </td>
-        </tr>
-      `;
+          <td>${project.project_id}</td><td>${project.project_title}</td><td>${project.supervisor}</td>
+          <td><button class="select-project-btn" onclick="selectProject('${project.project_id}')">Select</button></td>
+        </tr>`;
     });
-
     tableHTML += `</tbody></table>`;
     container.innerHTML = tableHTML;
   } catch (error) {
-    console.error("Error fetching projects:", error);
+    console.error(error);
   }
 }
 
 function selectProject(projectID) {
   selectedProjectID = projectID;
-  const allRows = document.querySelectorAll("#projectTable tbody tr");
-  allRows.forEach(row => row.classList.remove("selected-project"));
+  document.querySelectorAll("#projectTable tbody tr").forEach(row => row.classList.remove("selected-project"));
   const selectedRow = document.getElementById(`project-row-${projectID}`);
   if (selectedRow) selectedRow.classList.add("selected-project");
 }
 
+// --- NEW: FETCH REQUIREMENTS & QUESTIONS ---
+async function fetchRequirements(token, equipmentId) {
+    try {
+        const response = await fetch("http://localhost:8000/get_equipment_requirements", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token, ID: equipmentId })
+        });
+        const data = await response.json();
+        return data.message; // Returns { requirements: [], questions: [] }
+    } catch (e) {
+        console.error("Error fetching requirements", e);
+        return null;
+    }
+}
+
+// --- MAIN LOGIC ---
 function trackRequest() {
   const token = getCookie();
   const equipmentName = getURLParameter("equipment");
   const table = document.getElementById("books");
 
-  if (!token) return;
+  if (!token) return; 
   if (!equipmentName) {
-    table.innerHTML = "<p>Please select an equipment from the main page.</p>";
-    return;
+      table.innerHTML = "<p>Please select an equipment from the main page.</p>";
+      return;
   }
 
   const requestData = { token: token, name: equipmentName };
@@ -137,139 +127,180 @@ function trackRequest() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(requestData),
   })
-    .then((response) => response.json())
-    .then((data) => {
+    .then(res => res.json())
+    .then(data => {
       const message = data.message;
-
-      // Clear the table first to prevent duplicates
-      table.innerHTML = "";
+      table.innerHTML = ""; 
 
       if (!message || message.length === 0) {
-        table.innerHTML = "<p>No items found for this equipment type.</p>";
-        return;
+          table.innerHTML = "<p>No items found.</p>";
+          return;
       }
 
       message.forEach((element) => {
         const div = document.createElement("div");
         div.classList.add("book");
-
-        // NOTE: element.equipment_name might be undefined depending on backend response.
-        // Usually backend returns 'equipment_id' and 'location'.
+        // We create a container for the FORM specific to this equipment ID
+        const formId = `req-form-${element.equipment_id}`;
+        
         div.innerHTML = `
-          <h3>Equipment ID: ${element.equipment_id}</h3>
-          <p>Location: ${element.location}</p>
-          <button class="request-button" style="
-            padding: 8px 16px;
-            background-color: #333;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-          ">Show Slots</button>
-          <div class="slots-container" style="margin-top:15px;"></div>
+        <h3>Equipment ID: ${element.equipment_id}</h3>
+        <p>Location: ${element.location}</p>
+        <button class="request-button" style="padding:8px 16px; background:#333; color:#fff; border:none; cursor:pointer;">Show Slots</button>
+        
+        <div id="${formId}" style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:5px; display:none;"></div>
+        
+        <div class="slots-container" style="margin-top:15px;"></div>
         `;
-
         table.appendChild(div);
 
         const button = div.querySelector("button");
-        button.addEventListener("click", () => {
-          const requestData = { token: token, ID: element.equipment_id };
+        button.addEventListener("click", async () => {
+          // 1. Fetch Requirements First
+          const formContainer = document.getElementById(formId);
+          const reqData = await fetchRequirements(token, element.equipment_id);
+          
+          // Build the Form HTML
+          if (reqData) {
+              let formHtml = "<h4>Usage Requirements</h4>";
+              
+              // Checkboxes for Features
+              if (reqData.requirements.length > 0) {
+                  reqData.requirements.forEach(req => {
+                      if(req.type === 'fixed') {
+                          formHtml += `
+                            <div style="margin-bottom:5px;">
+                                <input type="checkbox" class="req-checkbox" value="${req.name}" data-cost="${req.cost}">
+                                <label> ${req.name} (Add-on Cost: ${req.cost})</label>
+                            </div>`;
+                      } else {
+                          formHtml += `<p style="font-size:0.9em; color:#555;">Note: ${req.name} costs ${req.cost} per slot.</p>`;
+                      }
+                  });
+              } else {
+                  formHtml += "<p style='font-size:0.9em; color:#666;'>No special requirements.</p>";
+              }
 
+              // Text Inputs for Questions
+              if (reqData.questions.length > 0) {
+                  formHtml += "<h4 style='margin-top:15px;'>Additional Info</h4>";
+                  reqData.questions.forEach(q => {
+                      formHtml += `
+                        <div style="margin-bottom:10px;">
+                            <label style="display:block; font-weight:bold; font-size:0.9em;">${q}</label>
+                            <input type="text" class="req-answer" data-question="${q}" style="width:95%; padding:5px; border:1px solid #ccc; border-radius:3px;">
+                        </div>`;
+                  });
+              }
+              
+              formContainer.innerHTML = formHtml;
+              formContainer.style.display = "block";
+          }
+
+          // 2. Fetch Slots
+          const slotRequest = { token: token, ID: element.equipment_id };
           fetch("http://localhost:8000/show_available_slots_equipment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestData),
+            body: JSON.stringify(slotRequest),
           })
-            .then((response) => response.json())
-            .then((data) => {
-              const message = data.message;
+            .then(res => res.json())
+            .then(slotData => {
               const slots = div.querySelector(".slots-container");
               slots.innerHTML = "";
-
-              if (!message || message.length === 0) {
-                slots.innerHTML = "<p>No slots available.</p>";
-                return;
+              
+              if (!slotData.message || slotData.message.length === 0) {
+                  slots.innerHTML = "<p>No slots available.</p>";
+                  return;
               }
 
-              // --- SORTING LOGIC ADDED HERE ---
-              // Sorts the slots by slot_id in ascending order (smallest to largest)
-              message.sort((a, b) => a.slot_id - b.slot_id);
-              // --------------------------------
+              // Sort slots
+              slotData.message.sort((a, b) => a.slot_id - b.slot_id);
 
-              message.forEach((slot) => {
+              slotData.message.forEach((slot) => {
                 const slotDiv = document.createElement("div");
                 slotDiv.classList.add("slot");
-
                 const displayTime = formatSlotTime(slot.slot_time);
 
                 slotDiv.innerHTML = `
-                  <p>Slot ID: ${slot.slot_id}</p>
-                  <p><strong>Time:</strong> ${displayTime}</p>
-                  <div style="margin-top: 10px;">
-                    <label style="font-size: 0.9em; font-weight: bold;">Duration (Slots): </label>
-                    <input type="number" class="slot-count" value="1" min="1" max="10" 
-                           style="width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
-                  </div>
+                    <p>Slot ID: ${slot.slot_id}</p>
+                    <p><strong>Time:</strong> ${displayTime}</p>
+                    <div style="margin-top: 10px;">
+                        <label style="font-size: 0.9em; font-weight:bold;">Duration (Slots): </label>
+                        <input type="number" class="slot-count" value="1" min="1" max="10" style="width:60px; padding:5px;">
+                    </div>
                 `;
-
-                slots.appendChild(slotDiv);
-
+                
                 const slotButton = document.createElement("button");
-                slotButton.classList.add("book-slot-btn");
+                slotButton.className = "book-slot-btn";
                 slotButton.textContent = "Book Slot(s)";
                 slotDiv.appendChild(slotButton);
+                slots.appendChild(slotDiv);
 
+                // --- BOOKING CLICK HANDLER ---
                 slotButton.addEventListener("click", () => {
                   if (!selectedProjectID) {
-                    alert("Please select a project from the table in Step 1 first.");
+                    alert("Please select a project from the table above first.");
                     return;
                   }
+                  
+                  const count = parseInt(slotDiv.querySelector(".slot-count").value);
+                  if (count < 1) { alert("Invalid duration"); return; }
 
-                  const countInput = slotDiv.querySelector(".slot-count");
-                  const count = parseInt(countInput.value);
+                  // --- NEW: GATHER FORM DATA ---
+                  // 1. Get Checkboxes (Requirements)
+                  const selectedReqs = [];
+                  formContainer.querySelectorAll('.req-checkbox:checked').forEach(cb => {
+                      selectedReqs.push(cb.value);
+                  });
 
-                  if (count < 1) {
-                    alert("Duration must be at least 1.");
-                    return;
+                  // 2. Get Answers
+                  const answers = {};
+                  let missingAnswer = false;
+                  formContainer.querySelectorAll('.req-answer').forEach(input => {
+                      if(input.value.trim() === "") missingAnswer = true;
+                      answers[input.dataset.question] = input.value.trim();
+                  });
+
+                  if(missingAnswer) {
+                      if(!confirm("Some additional info fields are empty. Proceed anyway?")) return;
                   }
 
-                  const requestData = {
+                  // 3. Prepare Data Payload
+                  const finalRequestData = JSON.stringify({
+                      requirements: selectedReqs,
+                      answers: answers
+                  });
+
+                  const payload = {
                     token: token,
                     slot_id: slot.slot_id,
                     project_id: selectedProjectID,
-                    count: count
+                    count: count,
+                    request_data: finalRequestData // Sending the JSON string
                   };
 
-                  console.log(JSON.stringify(requestData));
-
+                  console.log("Booking Payload:", payload);
+                  
                   fetch("http://localhost:8000/request_multiple_slots", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(requestData),
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      if (data.message === "success") {
-                        alert("Request sent successfully for " + count + " slot(s).");
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                      if (d.message === "success") {
+                        alert("Booking Successful!");
                         window.location.href = "main.html";
                       } else {
-                        alert("Failed to book: " + data.message);
+                        alert("Failed: " + d.message);
                       }
                     })
-                    .catch((error) => {
-                      console.error(error);
-                      alert("An error occurred.");
-                    });
+                    .catch(err => console.error(err));
                 });
               });
-            })
-            .catch((error) => {
-              console.error(error);
             });
         });
       });
-    })
-    .catch((error) => {
-      console.error(error);
     });
 }

@@ -332,6 +332,17 @@ async def show_projects(token: Token):
         print("error_show_user", err)
         return {"message":"ERROR"}
     
+@app.post("/show_projects_approved")
+async def show_projects_approved(token: Token):
+    try:
+        current_user = token.token
+        db = open_connection(current_user)
+        result = database_handler.show_projects_approved(db)
+        db = None # dereference
+        return {"message":result}
+    except Exception as err:
+        print("error_show_user", err)
+        return {"message":"ERROR"}
 
 @app.post("/get_ids_by_equipment_name")
 async def get_ids_by_equipment_name(equipment: Equipment):
@@ -387,16 +398,22 @@ async def create_user(user_data: CreateUser|CreateEquipment):
             return {"message": "Unauthorized"}
         
         db = open_connection(user_data.token)
-        if user_data.user_type =="equipment":
+        
+        if user_data.user_type == "equipment":
+            # PASS THE NEW ARGUMENTS HERE
             result = database_handler.create_equipment(
                 db,
                 user_data.equipment_name,
                 user_data.location,
                 user_data.staff_incharge_id,
                 user_data.faculty_incharge_id,
-                user_data.equipment_id
+                user_data.equipment_id,
+                user_data.unit_time,
+                user_data.requirements, # New
+                user_data.questions     # New
             )
         else:
+            # (Existing logic for students/staff/faculty remains unchanged)
             result = database_handler.create_user(
                 db, 
                 user_data.user_type,
@@ -585,15 +602,48 @@ async def request_multiple_slots(request: MultiSlotRequest):
         
         database_handler.request_multiple_slots(
             db, 
-            request.slot_id, # Changed from start_slot_id
+            request.slot_id, 
             request.project_id, 
-            request.count
+            request.count,
+            request.request_data
         )
         
-        db = None 
         return {"message": "success"}
     except ValueError as ve:
         return {"message": str(ve)}
     except Exception as err:
         print("error_multi_book", err)
+        return {"message": "ERROR: " + str(err)}
+    
+@app.post("/get_equipment_requirements")
+async def get_equipment_requirements(data: EquipmentByID):
+    try:
+        db = open_connection(data.token)
+        result = database_handler.get_equipment_requirements(db, data.ID)
+        return {"message": result}
+    except Exception as err:
+        return {"message": "ERROR: " + str(err)}
+    
+    # In API.py
+from BaseModels import DeductFundsModel # Import this
+
+@app.post("/manual_deduct_funds")
+async def manual_deduct_funds(data: DeductFundsModel):
+    try:
+        # Verify user is staf
+
+        db = open_connection(data.token)
+        
+        database_handler.manual_fund_deduction(
+            db,
+            data.project_id,
+            data.amount,
+            data.reason
+        )
+        
+        return {"message": "Funds deducted successfully."}
+    except ValueError as ve:
+        return {"message": str(ve)}
+    except Exception as err:
+        print("error_deduct", err)
         return {"message": "ERROR: " + str(err)}

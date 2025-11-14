@@ -30,10 +30,6 @@ class EquipmentByID(BaseModel):
     token: str
     ID: str
 
-
-# ...existing code...
-# ...existing code...
-
 class AdminCredentials(BaseModel):
     username: str
     password: str
@@ -55,6 +51,10 @@ class CreateEquipment(BaseModel):
     location: str
     staff_incharge_id: str
     faculty_incharge_id: str
+    unit_time: int = 60
+    requirements: list = []  # NEW
+    questions: list = []     # NEW
+
 class DeleteUser(BaseModel):
     token: str
     user_type: str
@@ -77,8 +77,6 @@ class InsertSlotRequest(BaseModel):
     start_time: str
     end_time: str
     
-    
-
 class AddProjectModel(BaseModel):
     token: str
     project_id: str  
@@ -99,10 +97,17 @@ class RejectProjectModel(BaseModel):
     token: str
     project_id: str
 
-# In BaseModels.py
-
 class MultiSlotRequest(BaseModel):
     token: str
-    slot_id: int  # Changed back from start_slot_id
+    slot_id: int
     project_id: str
     count: int
+    request_data: str
+
+    # In BaseModels.py
+
+class DeductFundsModel(BaseModel):
+    token: str
+    project_id: str
+    amount: int
+    reason: str
