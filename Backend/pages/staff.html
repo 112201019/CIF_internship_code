@@ -144,53 +144,6 @@
             return html || "<em>No details.</em>";
         } catch (e) { return "<em>Error.</em>"; }
     }
-
-    // --- 2. FETCH REQUESTS ---
-    function showPendingRequestsStaff() {
-      const token = getCookie();
-      const container = document.getElementById("showPendingStaff");
-      container.innerHTML = "<p>Loading...</p>";
-
-      fetch("http://localhost:8000/show_requests_staff_incharge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      })
-      .then(r => r.json())
-      .then(data => {
-        container.innerHTML = "";
-        if(!data.message || data.message.length === 0) {
-            container.innerHTML = "<p style='color:#777; text-align:center; padding:20px;'>No pending requests.</p>";
-            return;
-        }
-
-        data.message.forEach(req => {
-          const div = document.createElement("div");
-          div.className = "request-item";
-          const detailsHtml = parseRequestDetails(req.request_data);
-          const timeStr = req.slot_time ? new Date(req.slot_time).toLocaleString() : "N/A";
-
-          div.innerHTML = `
-            <div class="req-header">
-                <span>#${req.request_id} - ${req.equipment_name}</span>
-                <span style="color:#d35400;">${timeStr}</span>
-            </div>
-            <div style="font-size:0.9rem;">
-                <p><strong>Student:</strong> ${req.student_id || 'Unknown'}</p>
-                <p><strong>Project:</strong> ${req.proj_id}</p>
-                <p><strong>Duration:</strong> ${req.slot_count || 1} Slots &nbsp;|&nbsp; <strong>Cost:</strong> ${req.cost || 0}</p>
-            </div>
-            <div class="req-details">${detailsHtml}</div>
-            <div class="req-actions">
-                <button class="btn btn-success" style="flex:1;" onclick="decideStaff(${req.request_id}, 'approved')">Approve</button>
-                <button class="btn btn-danger" style="flex:1;" onclick="decideStaff(${req.request_id}, 'rejected')">Reject</button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
-      });
-    }
-
     function decideStaff(id, decision) {
         const token = getCookie();
         fetch("http://localhost:8000/decide_by_staff_incharge", {

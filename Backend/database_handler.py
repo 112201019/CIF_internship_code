@@ -204,7 +204,7 @@ def show_requests_supervisor(db: PostgresqlDB):
     query = "select * from show_requests_supervisor()"
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -217,7 +217,7 @@ def show_requests_faculty_incharge(db: PostgresqlDB):
     query = "select * from show_requests_faculty_incharge()"
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -230,7 +230,7 @@ def show_requests_staff_incharge(db: PostgresqlDB):
     query = "select * from show_requests_staff_incharge()"
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -295,6 +295,7 @@ def show_requests_student(db: PostgresqlDB):
     user = list(db.execute_dql_commands("select current_user"))[0][0]
     view = "request_" + user
     query = f"select {view}.request_id, {view}.slot_id, slot.equipment_id, {view}.proj_id, slot.slot_time from {view}, slot where slot.slot_id = {view}.slot_id"
+    query2 = f"select "
     r = list(db.execute_dql_commands(query))
     result = []
     fields = ["request_id", "slot_id", "equipment_id", "proj_id", "slot_time"]

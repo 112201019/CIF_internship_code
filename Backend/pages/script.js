@@ -267,7 +267,10 @@ function showPendingRequestsSuper() {
         requestIdPara.textContent = `Request ID: ${request.request_id}`;
 
         const slotIdPara = document.createElement("p");
-        slotIdPara.textContent = `Slot ID: ${request.slot_id}`;
+        slotIdPara.textContent = `Starting Slot ID: ${request.slot_id}`;
+
+        const slotCountPara = document.createElement("p");
+        slotCountPara.textContent = `Slot Count: ${request.slot_count}`;
 
         const equipmentIdPara = document.createElement("p");
         equipmentIdPara.textContent = `Equipment Name: ${request.equipment_name}`;
@@ -275,12 +278,58 @@ function showPendingRequestsSuper() {
         const slotTimePara = document.createElement("p");
         slotTimePara.textContent = `Slot Time: ${request.slot_time}`;
 
-        requestDiv.appendChild(requestIdPara);
-        requestDiv.appendChild(slotIdPara);
-        requestDiv.appendChild(equipmentIdPara);
-        requestDiv.appendChild(slotTimePara);
+        const SlotUnitTimePara = document.createElement("p");
+        SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
 
+        // const requestDataPara = document.createElement("p");
+        // requestDataPara.textContent = `Request Data: ${request.request_data}`;
+        requestDiv.appendChild(requestIdPara);
+        requestDiv.appendChild(equipmentIdPara);
+        requestDiv.appendChild(slotIdPara);
+        requestDiv.appendChild(slotTimePara);
+        requestDiv.appendChild(slotCountPara);
+        requestDiv.appendChild(SlotUnitTimePara);
+        // --- Handle the JSON Request Data ---
+        // If request_data is a string, parse it. If it's already an object, use it directly.
+        const details = typeof request.request_data === 'string' 
+                        ? JSON.parse(request.request_data) 
+                        : request.request_data;
+
+        // 1. Process Requirements (List)
+        if (details.requirements && details.requirements.length > 0) {
+            const reqHeader = document.createElement("p");
+            reqHeader.innerHTML = "<strong>Requirements:</strong>";
+            const reqList = document.createElement("ul");
+            
+            details.requirements.forEach(req => {
+                const li = document.createElement("li");
+                li.textContent = req;
+                reqList.appendChild(li);
+            });
+            
+            requestDiv.appendChild(reqHeader);
+            requestDiv.appendChild(reqList);
+        }
+
+        // 2. Process Extra Questions/Answers (Key-Value)
+        if (details.answers && Object.keys(details.answers).length > 0) {
+            const ansHeader = document.createElement("p");
+            ansHeader.innerHTML = "<strong>Extra Details:</strong>";
+            requestDiv.appendChild(ansHeader);
+
+            // Loop through the object keys and values
+            Object.entries(details.answers).forEach(([question, answer]) => {
+                const qaDiv = document.createElement("div");
+                qaDiv.style.marginLeft = "15px";
+                qaDiv.style.marginBottom = "5px";
+                qaDiv.innerHTML = `
+                    <span style="color: #555;"></span> ${question} : <strong>${answer}</strong>
+                `;
+                requestDiv.appendChild(qaDiv);
+            });
+        }
         container.appendChild(requestDiv);
+
 
         // add two buttons to approve or reject the request
         const approveButton = document.createElement("button");
@@ -397,7 +446,10 @@ function showPendingRequestsIn() {
         requestIdPara.textContent = `Request ID: ${request.request_id}`;
 
         const slotIdPara = document.createElement("p");
-        slotIdPara.textContent = `Slot ID: ${request.slot_id}`;
+        slotIdPara.textContent = `Starting Slot ID: ${request.slot_id}`;
+
+        const slotCountPara = document.createElement("p");
+        slotCountPara.textContent = `Slot Count: ${request.slot_count}`;
 
         const equipmentIdPara = document.createElement("p");
         equipmentIdPara.textContent = `Equipment Name: ${request.equipment_name}`;
@@ -405,12 +457,58 @@ function showPendingRequestsIn() {
         const slotTimePara = document.createElement("p");
         slotTimePara.textContent = `Slot Time: ${request.slot_time}`;
 
-        requestDiv.appendChild(requestIdPara);
-        requestDiv.appendChild(slotIdPara);
-        requestDiv.appendChild(equipmentIdPara);
-        requestDiv.appendChild(slotTimePara);
+        const SlotUnitTimePara = document.createElement("p");
+        SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
 
+        // const requestDataPara = document.createElement("p");
+        // requestDataPara.textContent = `Request Data: ${request.request_data}`;
+        requestDiv.appendChild(requestIdPara);
+        requestDiv.appendChild(equipmentIdPara);
+        requestDiv.appendChild(slotIdPara);
+        requestDiv.appendChild(slotTimePara);
+        requestDiv.appendChild(slotCountPara);
+        requestDiv.appendChild(SlotUnitTimePara);
+        // --- Handle the JSON Request Data ---
+        // If request_data is a string, parse it. If it's already an object, use it directly.
+        const details = typeof request.request_data === 'string' 
+                        ? JSON.parse(request.request_data) 
+                        : request.request_data;
+
+        // 1. Process Requirements (List)
+        if (details.requirements && details.requirements.length > 0) {
+            const reqHeader = document.createElement("p");
+            reqHeader.innerHTML = "<strong>Requirements:</strong>";
+            const reqList = document.createElement("ul");
+            
+            details.requirements.forEach(req => {
+                const li = document.createElement("li");
+                li.textContent = req;
+                reqList.appendChild(li);
+            });
+            
+            requestDiv.appendChild(reqHeader);
+            requestDiv.appendChild(reqList);
+        }
+
+        // 2. Process Extra Questions/Answers (Key-Value)
+        if (details.answers && Object.keys(details.answers).length > 0) {
+            const ansHeader = document.createElement("p");
+            ansHeader.innerHTML = "<strong>Extra Details:</strong>";
+            requestDiv.appendChild(ansHeader);
+
+            // Loop through the object keys and values
+            Object.entries(details.answers).forEach(([question, answer]) => {
+                const qaDiv = document.createElement("div");
+                qaDiv.style.marginLeft = "15px";
+                qaDiv.style.marginBottom = "5px";
+                qaDiv.innerHTML = `
+                    <span style="color: #555;"></span> ${question} : <strong>${answer}</strong>
+                `;
+                requestDiv.appendChild(qaDiv);
+            });
+        }
         container.appendChild(requestDiv);
+
 
         // add two buttons to approve or reject the request
         const approveButton = document.createElement("button");
@@ -528,7 +626,10 @@ function showPendingRequestsStaff() {
         requestIdPara.textContent = `Request ID: ${request.request_id}`;
 
         const slotIdPara = document.createElement("p");
-        slotIdPara.textContent = `Slot ID: ${request.slot_id}`;
+        slotIdPara.textContent = `Starting Slot ID: ${request.slot_id}`;
+
+        const slotCountPara = document.createElement("p");
+        slotCountPara.textContent = `Slot Count: ${request.slot_count}`;
 
         const equipmentIdPara = document.createElement("p");
         equipmentIdPara.textContent = `Equipment Name: ${request.equipment_name}`;
@@ -536,12 +637,58 @@ function showPendingRequestsStaff() {
         const slotTimePara = document.createElement("p");
         slotTimePara.textContent = `Slot Time: ${request.slot_time}`;
 
-        requestDiv.appendChild(requestIdPara);
-        requestDiv.appendChild(slotIdPara);
-        requestDiv.appendChild(equipmentIdPara);
-        requestDiv.appendChild(slotTimePara);
+        const SlotUnitTimePara = document.createElement("p");
+        SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
 
+        // const requestDataPara = document.createElement("p");
+        // requestDataPara.textContent = `Request Data: ${request.request_data}`;
+        requestDiv.appendChild(requestIdPara);
+        requestDiv.appendChild(equipmentIdPara);
+        requestDiv.appendChild(slotIdPara);
+        requestDiv.appendChild(slotTimePara);
+        requestDiv.appendChild(slotCountPara);
+        requestDiv.appendChild(SlotUnitTimePara);
+        // --- Handle the JSON Request Data ---
+        // If request_data is a string, parse it. If it's already an object, use it directly.
+        const details = typeof request.request_data === 'string' 
+                        ? JSON.parse(request.request_data) 
+                        : request.request_data;
+
+        // 1. Process Requirements (List)
+        if (details.requirements && details.requirements.length > 0) {
+            const reqHeader = document.createElement("p");
+            reqHeader.innerHTML = "<strong>Requirements:</strong>";
+            const reqList = document.createElement("ul");
+            
+            details.requirements.forEach(req => {
+                const li = document.createElement("li");
+                li.textContent = req;
+                reqList.appendChild(li);
+            });
+            
+            requestDiv.appendChild(reqHeader);
+            requestDiv.appendChild(reqList);
+        }
+
+        // 2. Process Extra Questions/Answers (Key-Value)
+        if (details.answers && Object.keys(details.answers).length > 0) {
+            const ansHeader = document.createElement("p");
+            ansHeader.innerHTML = "<strong>Extra Details:</strong>";
+            requestDiv.appendChild(ansHeader);
+
+            // Loop through the object keys and values
+            Object.entries(details.answers).forEach(([question, answer]) => {
+                const qaDiv = document.createElement("div");
+                qaDiv.style.marginLeft = "15px";
+                qaDiv.style.marginBottom = "5px";
+                qaDiv.innerHTML = `
+                    <span style="color: #555;"></span> ${question} : <strong>${answer}</strong>
+                `;
+                requestDiv.appendChild(qaDiv);
+            });
+        }
         container.appendChild(requestDiv);
+
 
         // add two buttons to approve or reject the request
         const approveButton = document.createElement("button");

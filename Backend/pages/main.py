@@ -5,7 +5,7 @@ import socketserver
 directory = "."  # Change this to the directory containing your HTML file
 
 # Set the port number you want to use
-port = 5001 # You can change this to any available port number
+port = 5000 # You can change this to any available port number
 
 # Define the Handler class
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
