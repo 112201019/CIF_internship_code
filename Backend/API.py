@@ -647,3 +647,77 @@ async def manual_deduct_funds(data: DeductFundsModel):
     except Exception as err:
         print("error_deduct", err)
         return {"message": "ERROR: " + str(err)}
+    
+@app.post("/get_ongoing_experiments")
+async def get_ongoing_experiments(token: Token):
+    try:
+        # 1. Open connection using the existing helper
+        db = open_connection(token.token)
+        
+        # 2. Execute SQL using the handler's DQL method
+        # We use 'current_user' in SQL so Postgres uses the logged-in staff's ID
+        query = """
+            SELECT t.request_id, e.equipment_name, s.slot_time, r.proj_id
+            FROM experiment_tracking t
+            JOIN request r ON t.request_id = r.request_id
+            JOIN slot s ON r.slot_id = s.slot_id
+            JOIN equipment e ON s.equipment_id = e.equipment_id
+            WHERE t.staff_id = current_user AND t.is_completed = FALSE
+            ORDER BY s.slot_time ASC
+        """
+        
+        # 3. Fetch and format results
+        rows = list(db.execute_dql_commands(query))
+        
+        result = []
+        for row in rows:
+            result.append({
+                "request_id": row[0],
+                "equipment_name": row[1],
+                "slot_time": str(row[2]), # Convert timestamp to string
+                "proj_id": row[3]
+            })
+            
+        db = None # dereference
+        return {"message": result}
+
+    except Exception as err:
+        print("error_ongoing", err)
+        return {"message": "ERROR"}
+    
+@app.post("/finalize_experiment")
+async def finalize_experiment(request: Request):
+    try:
+        # 1. Parse Data
+        data = await request.json()
+        token = data.get("token")
+        req_id = data.get("request_id")
+        proj_id = data.get("project_id")
+        extra_charges = int(data.get("extra_charges", 0))
+
+        # 2. Open Connection
+        db = open_connection(token)
+        
+        # 3. Mark Experiment as Completed
+        query_update = f"""
+            UPDATE experiment_tracking 
+            SET is_completed = TRUE, actual_completion_time = NOW() 
+            WHERE request_id = {req_id}
+        """
+        db.execute_ddl_and_dml_commands(query_update)
+        
+        # 4. Deduct Extra Charges (Only if applicable)
+        if extra_charges > 0:
+            query_deduct = f"""
+                UPDATE project 
+                SET money = money - {extra_charges} 
+                WHERE project_id = '{proj_id}'
+            """
+            db.execute_ddl_and_dml_commands(query_deduct)
+            
+        db = None # dereference
+        return {"message": "Experiment completed. Extra charges (if any) deducted."}
+
+    except Exception as err:
+        print("error_finalize", err)
+        return {"message": "ERROR: " + str(err)}

@@ -89,7 +89,7 @@
         <div id="responseMessage" style="margin-top: 15px; text-align:center; font-weight:bold; font-size:0.9rem;"></div>
       </div>
 
-      <div class="card" style="border-top: 4px solid #f39c12;">
+      <!-- <div class="card" style="border-top: 4px solid #f39c12;">
         <h3>Extra Charges</h3>
         <p>Manually deduct funds for consumables or damages.</p>
         
@@ -109,6 +109,14 @@
           <button type="submit" class="btn btn-warning btn-block">Deduct Funds</button>
         </form>
         <div id="deductResult" style="margin-top: 15px; text-align:center; font-weight:bold; font-size:0.9rem;"></div>
+      </div> -->
+      <div class="card" style="border-top: 4px solid #9b59b6;">
+        <h3>Ongoing Experiments</h3>
+        <p>Mark experiments as completed. Add extra charges only if applicable.</p>
+        
+        <button class="btn btn-primary btn-block" onclick="loadOngoingExperiments()">Refresh List</button>
+        
+        <div id="ongoingExperimentsList" class="request-list" style="margin-top:15px;"></div>
       </div>
 
     </div>

@@ -1238,3 +1238,92 @@ async function addNewProject(event) {
     resultDiv.style.color = "red";
   }
 }
+
+async function loadOngoingExperiments() {
+  const token = getCookie();
+  if (!token) return;
+
+  try {
+    const res = await fetch("http://localhost:8000/get_ongoing_experiments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token }),
+    });
+    
+    const data = await res.json();
+    const container = document.getElementById("ongoingExperimentsList");
+    container.innerHTML = "";
+
+    if (!data.message || data.message.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:#777;'>No ongoing experiments.</p>";
+        return;
+    }
+
+    data.message.forEach(exp => {
+      const div = document.createElement("div");
+      div.className = "request-item";
+      
+      div.innerHTML = `
+        <div class="req-header" style="border-bottom: 1px solid #ccc; padding-bottom:5px; margin-bottom:5px;">
+            <strong>Request ID: ${exp.request_id}</strong>
+        </div>
+        <p style="margin:5px 0;"><strong>Equipment:</strong> ${exp.equipment_name}</p>
+        <p style="margin:5px 0;"><strong>Scheduled:</strong> ${exp.slot_time}</p>
+        <p style="margin:5px 0;"><strong>Project ID:</strong> ${exp.proj_id}</p>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+        
+        <div class="form-group">
+          <label style="font-size:0.9em; font-weight:bold;">Extra Charges (if any):</label>
+          <input type="number" id="extra_amt_${exp.request_id}" value="0" min="0" style="width:100%; padding:5px;">
+        </div>
+        
+        <div class="form-group">
+          <label style="font-size:0.9em; font-weight:bold;">Reason/Notes:</label>
+          <input type="text" id="extra_reason_${exp.request_id}" placeholder="e.g. Broken Glassware" style="width:100%; padding:5px;">
+        </div>
+        
+        <button class="btn btn-success btn-block" 
+            onclick="finalizeAndBill(${exp.request_id}, '${exp.proj_id}')"
+            style="margin-top:10px; background-color:#27ae60; color:white; width:100%; padding:10px; border:none; cursor:pointer;">
+          Complete & Apply Charges
+        </button>
+      `;
+      container.appendChild(div);
+    });
+  } catch (error) {
+    console.error("Error loading experiments:", error);
+  }
+}
+
+async function finalizeAndBill(reqId, projId) {
+  if (!confirm("Mark this experiment as completed? Any extra charges entered will be deducted now.")) {
+      return;
+  }
+
+  const token = getCookie();
+  const extraAmount = document.getElementById(`extra_amt_${reqId}`).value;
+  const reason = document.getElementById(`extra_reason_${reqId}`).value;
+
+  try {
+    const response = await fetch("http://localhost:8000/finalize_experiment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+          token: token, 
+          request_id: reqId, 
+          project_id: projId,
+          extra_charges: parseInt(extraAmount), 
+          notes: reason 
+      }),
+    });
+    
+    const result = await response.json();
+    alert(result.message);
+    loadOngoingExperiments(); // Refresh list
+    
+  } catch (error) {
+    console.error("Error finalizing:", error);
+    alert("An error occurred.");
+  }
+}
