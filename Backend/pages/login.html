@@ -1,31 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>CIF Portal Login | IIT Palakkad</title>
+    <link rel="stylesheet" href="login.css">
 </head>
-
 <body>
-    <div>
-        <form id="loginForm">
-            <div>username: <input id="usernameInput" type="text"></div>
-            <div>password: <input id="passwordInput" type="password"></div>
-            <div><button type="submit">Login</button></div>
-        </form>
+    <div class="login-wrapper">
+        <header class="brand-header">
+            <h1>CENTRAL INSTRUMENTATION FACILITY</h1>
+            <p class="subtitle">IIT PALAKKAD CIF PORTAL LOGIN</p>
+        </header>
+
+        <div class="login-card">
+            <div class="image-section">
+                <img src="./IIT_PKD_long logo_RGB.jpg" alt="IIT Palakkad Campus">
+            </div>
+            
+            <div class="form-section">
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="usernameInput">Username</label>
+                        <input id="usernameInput" type="text" placeholder="Enter your ID" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="passwordInput">Password</label>
+                        <input id="passwordInput" type="password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="login-btn">Login to Portal</button>
+                </form>
+            </div>
+        </div>
     </div>
+
     <script src="admin.js"></script>
     <script src="script.js"></script>
-    <link rel="stylesheet" href="login.css">
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const token = getCookie();
             if (token) {
-                window.location.href = 'main.html';
+                window.location.href = 'main.html'; //
             }
         });
     </script>
 </body>
-
 </html>
