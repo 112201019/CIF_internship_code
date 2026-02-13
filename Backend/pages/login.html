@@ -37,12 +37,28 @@
     <script src="admin.js"></script>
     <script src="script.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const token = getCookie();
-            if (token) {
-                window.location.href = 'main.html'; //
+        document.addEventListener('DOMContentLoaded', async function () {
+        const token = getCookie();
+        if (token) {
+            // Fetch role and redirect correctly instead of just sending to main.html
+            try {
+                const response = await fetch("http://localhost:8000/is_member_of", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token }),
+                });
+                const data = await response.json();
+                
+                if (data.message === "admin") window.location.href = 'admin_dashboard.html';
+                else if (data.message === "faculty") window.location.href = 'faculty.html';
+                else if (data.message === "staff") window.location.href = 'staff.html';
+                else window.location.href = 'main.html';
+            } catch (e) {
+                // If check fails, stay on login or default to main
+                window.location.href = 'main.html';
             }
-        });
+        }
+    });
     </script>
 </body>
 </html>

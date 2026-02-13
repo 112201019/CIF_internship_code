@@ -156,12 +156,22 @@ def show_all_equipment(db: PostgresqlDB):
         result.append(record)
     return result
 def show_all_equipment_admin(db: PostgresqlDB):
-    fields = ["equipment_name", "location", "staff_incharge_id","faculty_incharge_id","equipment_id"]
-    r = list(db.execute_dql_commands("select * from equipment"))
+    # We explicitly select the columns to match the 'fields' list below
+    # This prevents crashes if the database has extra columns like 'unit_time'
+    query = """
+        SELECT equipment_name, location, staff_incharge_id, faculty_incharge_id, equipment_id 
+        FROM equipment
+    """
+    
+    fields = ["equipment_name", "location", "staff_incharge_id", "faculty_incharge_id", "equipment_id"]
+    
+    r = list(db.execute_dql_commands(query))
+    
     result = []
     for i in r:
         record = {}
-        for j in range(len(i)):
+        # Iterate only up to the number of fields we defined
+        for j in range(len(fields)):
             record[fields[j]] = i[j]
         result.append(record)
     return result
@@ -404,7 +414,7 @@ def create_user(db: PostgresqlDB, user_type: str, user_id: str, name: str, mail_
         """
     elif user_type == "faculty":
         query = f"""
-        INSERT INTO faculty (faculty_id, faculty_name, mail_id, department, password) 
+        INSERT INTO faculty (faculty_id, faculty_name, mail_id, department_id, password) 
         VALUES (
             '{user_id}', 
             '{name}',

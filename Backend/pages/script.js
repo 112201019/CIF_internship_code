@@ -58,16 +58,37 @@ document
       const response = await login(username, password); // 1. Call API, get new token
 
       if (response.message === "Cookie is set on the browser") {
-
-        // --- THIS IS THE FIX ---
-        const oldToken = getCookie(); // 2. Get the name of the old token
+        
+        // --- Handle Cookie Management ---
+        const oldToken = getCookie(); 
         if (oldToken) {
-          deleteCookie(oldToken); // 3. Delete the old cookie
+          deleteCookie(oldToken); 
         }
-        // --- END FIX ---
+        setCookie(response.Token, response.Token); 
 
-        setCookie(response.Token, response.Token); // 4. Set the new cookie
-        window.location.href = "main.html"; // 5. Redirect
+        // --- NEW REDIRECT LOGIC ---
+        // Check the role *immediately* to decide where to go
+        const roleResponse = await fetch("http://localhost:8000/is_member_of", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: response.Token }),
+        });
+        
+        const roleData = await roleResponse.json();
+        const role = roleData.message;
+
+        // Redirect directly to the correct page
+        if (role === "admin") {
+            window.location.href = "admin_dashboard.html";
+        } else if (role === "faculty") {
+            window.location.href = "faculty.html";
+        } else if (role === "staff") {
+            window.location.href = "staff.html";
+        } else {
+            // Default to student dashboard
+            window.location.href = "main.html"; 
+        }
+        
       } else {
         alert("Login failed. Please check your credentials.");
       }
