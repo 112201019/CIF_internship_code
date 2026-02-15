@@ -605,7 +605,8 @@ async def request_multiple_slots(request: MultiSlotRequest):
             request.slot_id, 
             request.project_id, 
             request.count,
-            request.request_data
+            request.request_data,
+            request.comment
         )
         
         return {"message": "success"}
@@ -686,6 +687,7 @@ async def get_ongoing_experiments(token: Token):
         return {"message": "ERROR"}
     
 @app.post("/finalize_experiment")
+@app.post("/finalize_experiment")
 async def finalize_experiment(request: Request):
     try:
         # 1. Parse Data
@@ -694,17 +696,23 @@ async def finalize_experiment(request: Request):
         req_id = data.get("request_id")
         proj_id = data.get("project_id")
         extra_charges = int(data.get("extra_charges", 0))
+        notes = data.get("notes", "") # Get the remark/notes from frontend
 
         # 2. Open Connection
         db = open_connection(token)
         
-        # 3. Mark Experiment as Completed
-        query_update = f"""
+        # 3. Mark Experiment as Completed AND Store Remark
+        # We use :remark and :req_id as placeholders to safely handle text with quotes/symbols
+        query_update = """
             UPDATE experiment_tracking 
-            SET is_completed = TRUE, actual_completion_time = NOW() 
-            WHERE request_id = {req_id}
+            SET is_completed = TRUE, 
+                actual_completion_time = NOW(), 
+                remark = :remark
+            WHERE request_id = :req_id
         """
-        db.execute_ddl_and_dml_commands(query_update)
+        
+        # Execute with parameters
+        db.execute_ddl_and_dml_commands(query_update, values={"remark": notes, "req_id": req_id})
         
         # 4. Deduct Extra Charges (Only if applicable)
         if extra_charges > 0:
@@ -716,8 +724,24 @@ async def finalize_experiment(request: Request):
             db.execute_ddl_and_dml_commands(query_deduct)
             
         db = None # dereference
-        return {"message": "Experiment completed. Extra charges (if any) deducted."}
+        return {"message": "Experiment completed. Remarks saved and extra charges (if any) deducted."}
 
     except Exception as err:
         print("error_finalize", err)
+        return {"message": "ERROR: " + str(err)}
+    
+@app.post("/cancel_experiment")
+async def cancel_experiment_endpoint(request: Request):
+    try:
+        data = await request.json()
+        token = data.get("token")
+        req_id = data.get("request_id")
+        
+        db = open_connection(token)
+        database_handler.cancel_experiment(db, req_id)
+        db = None # dereference
+        
+        return {"message": "Experiment cancelled successfully. Funds refunded and slots freed."}
+    except Exception as err:
+        print("error_cancel", err)
         return {"message": "ERROR: " + str(err)}

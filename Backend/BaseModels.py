@@ -103,7 +103,7 @@ class MultiSlotRequest(BaseModel):
     project_id: str
     count: int
     request_data: str
-
+    comment: str = None
     # In BaseModels.py
 
 class DeductFundsModel(BaseModel):

@@ -214,7 +214,7 @@ def show_requests_supervisor(db: PostgresqlDB):
     query = "select * from show_requests_supervisor()"
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -227,7 +227,7 @@ def show_requests_faculty_incharge(db: PostgresqlDB):
     query = "select * from show_requests_faculty_incharge()"
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -240,7 +240,7 @@ def show_requests_staff_incharge(db: PostgresqlDB):
     query = "select * from show_requests_staff_incharge()"
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -616,7 +616,7 @@ from datetime import timedelta # Make sure to import this at the top
 
 # import json # Ensure this is imported at the top
 
-def request_multiple_slots(db: PostgresqlDB, slot_id: int, project_id: str, count: int, request_data: str):
+def request_multiple_slots(db: PostgresqlDB, slot_id: int, project_id: str, count: int, request_data: str, comment: str = ""):
     # 1. Get the equipment info for the start slot
     query_info = f"""
         SELECT s.equipment_id, s.slot_time
@@ -705,7 +705,7 @@ def request_multiple_slots(db: PostgresqlDB, slot_id: int, project_id: str, coun
     print("-------------------------------------------")
 
     # --- 4. Call the Procedure ---
-    query = f"call request_slot({slot_id}, '{project_id}', {total_cost}, {count}, '{request_data}')"
+    query = f"call request_slot({slot_id}, '{project_id}', {total_cost}, {count}, '{request_data}', '{comment}')"
     
     db.execute_ddl_and_dml_commands(query)
     print("DEBUG: Procedure called successfully.")
@@ -756,3 +756,64 @@ def manual_fund_deduction(db: PostgresqlDB, project_id: str, amount: int, reason
     
     # Optional: You could log this 'reason' to a transaction table here if you had one.
     print(f"Deducted {amount} from {project_id}. Reason: {reason}")
+
+def cancel_experiment(db: PostgresqlDB, request_id: int):
+    # 1. Fetch Request Details (Cost, Project ID, Slot Info)
+    query_info = f"""
+        SELECT r.proj_id, r.cost, r.slot_count, s.equipment_id, s.slot_time
+        FROM request r
+        JOIN slot s ON r.slot_id = s.slot_id
+        WHERE r.request_id = {request_id}
+    """
+    info = list(db.execute_dql_commands(query_info))
+
+    if not info:
+        raise ValueError("Request not found.")
+        
+    proj_id = info[0][0]
+    # Handle case where cost might be None
+    cost = int(info[0][1]) if info[0][1] is not None else 0
+    slot_count = info[0][2]
+    equip_id = str(info[0][3]).strip()
+    start_time = info[0][4]
+    
+    # 2. Build ONE SINGLE QUERY with multiple statements
+    # This ensures all actions happen together or fail together.
+    
+    # Logic:
+    # A. Update Request Status
+    # B. Refund Money
+    # C. Free the Slots (using a subquery to find the specific range of slots)
+    # D. Delete from experiment_tracking
+    
+    combined_query = f"""
+    DO $$
+    DECLARE
+        v_slot_ids INT[];
+    BEGIN
+
+        -- 1. Refund Money (if cost > 0)
+        IF {cost} > 0 THEN
+            UPDATE project SET money = money + {cost} WHERE project_id = '{proj_id}';
+        END IF;
+
+        -- 2. Free the Slots
+        -- We select the IDs of the consecutive slots starting at start_time
+        WITH target_slots AS (
+            SELECT slot_id FROM slot
+            WHERE equipment_id = '{equip_id}'
+            AND slot_time >= '{start_time}'
+            ORDER BY slot_time ASC
+            LIMIT {slot_count}
+        )
+        UPDATE slot
+        SET slot_status = 'free'
+        WHERE slot_id IN (SELECT slot_id FROM target_slots);
+
+        -- 3. Remove from experiment_tracking
+        DELETE FROM experiment_tracking WHERE request_id = {request_id};
+    END $$;
+    """
+    
+    # Execute the combined block
+    db.execute_ddl_and_dml_commands(combined_query)

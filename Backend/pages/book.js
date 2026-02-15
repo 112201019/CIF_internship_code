@@ -192,6 +192,12 @@ function trackRequest() {
                         </div>`;
                   });
               }
+              formHtml += `
+                  <h4 style='margin-top:15px;'>User Comments</h4>
+                  <div style="margin-bottom:10px;">
+                      <label style="display:block; font-weight:bold; font-size:0.9em;">Any special remarks?</label>
+                      <textarea id="user-comment" rows="3" style="width:95%; padding:5px; border:1px solid #ccc; border-radius:3px;" placeholder="Optional..."></textarea>
+                  </div>`;
               
               formContainer.innerHTML = formHtml;
               formContainer.style.display = "block";
@@ -243,7 +249,7 @@ function trackRequest() {
                     alert("Please select a project from the table above first.");
                     return;
                   }
-                  
+                  const userComment = document.getElementById("user-comment") ? document.getElementById("user-comment").value.trim() : "";
                   const count = parseInt(slotDiv.querySelector(".slot-count").value);
                   if (count < 1) { alert("Invalid duration"); return; }
 
@@ -277,7 +283,8 @@ function trackRequest() {
                     slot_id: slot.slot_id,
                     project_id: selectedProjectID,
                     count: count,
-                    request_data: finalRequestData // Sending the JSON string
+                    request_data: finalRequestData, // Sending the JSON string
+                    comment: userComment
                   };
 
                   console.log("Booking Payload:", payload);

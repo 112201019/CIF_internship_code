@@ -302,6 +302,12 @@ function showPendingRequestsSuper() {
         const SlotUnitTimePara = document.createElement("p");
         SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
 
+        // --- NEW CODE: Add Comment Display ---
+        const commentDiv = document.createElement("div");
+        if (request.comment) {
+            commentDiv.innerHTML = `<p style="color:#d35400; background:#fff3e0; padding:5px; border-left:3px solid #d35400;"><strong>User Comment:</strong> ${request.comment}</p>`;
+        }
+        // -------------------------------------
         // const requestDataPara = document.createElement("p");
         // requestDataPara.textContent = `Request Data: ${request.request_data}`;
         requestDiv.appendChild(requestIdPara);
@@ -310,6 +316,9 @@ function showPendingRequestsSuper() {
         requestDiv.appendChild(slotTimePara);
         requestDiv.appendChild(slotCountPara);
         requestDiv.appendChild(SlotUnitTimePara);
+        // Append the comment
+        requestDiv.appendChild(commentDiv);
+        // --- Handle the JSON Request Data ---
         // --- Handle the JSON Request Data ---
         // If request_data is a string, parse it. If it's already an object, use it directly.
         const details = typeof request.request_data === 'string' 
@@ -480,7 +489,12 @@ function showPendingRequestsIn() {
 
         const SlotUnitTimePara = document.createElement("p");
         SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
-
+        // --- NEW CODE: Add Comment Display ---
+        const commentDiv = document.createElement("div");
+        if (request.comment) {
+            commentDiv.innerHTML = `<p style="color:#d35400; background:#fff3e0; padding:5px; border-left:3px solid #d35400;"><strong>User Comment:</strong> ${request.comment}</p>`;
+        }
+        // -------------------------------------
         // const requestDataPara = document.createElement("p");
         // requestDataPara.textContent = `Request Data: ${request.request_data}`;
         requestDiv.appendChild(requestIdPara);
@@ -489,6 +503,8 @@ function showPendingRequestsIn() {
         requestDiv.appendChild(slotTimePara);
         requestDiv.appendChild(slotCountPara);
         requestDiv.appendChild(SlotUnitTimePara);
+        // Append the comment
+        requestDiv.appendChild(commentDiv);
         // --- Handle the JSON Request Data ---
         // If request_data is a string, parse it. If it's already an object, use it directly.
         const details = typeof request.request_data === 'string' 
@@ -661,6 +677,12 @@ function showPendingRequestsStaff() {
         const SlotUnitTimePara = document.createElement("p");
         SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
 
+        // --- NEW CODE: Add Comment Display ---
+        const commentDiv = document.createElement("div");
+        if (request.comment) {
+            commentDiv.innerHTML = `<p style="color:#d35400; background:#fff3e0; padding:5px; border-left:3px solid #d35400;"><strong>User Comment:</strong> ${request.comment}</p>`;
+        }
+        // -------------------------------------
         // const requestDataPara = document.createElement("p");
         // requestDataPara.textContent = `Request Data: ${request.request_data}`;
         requestDiv.appendChild(requestIdPara);
@@ -669,6 +691,8 @@ function showPendingRequestsStaff() {
         requestDiv.appendChild(slotTimePara);
         requestDiv.appendChild(slotCountPara);
         requestDiv.appendChild(SlotUnitTimePara);
+        // Append the comment
+        requestDiv.appendChild(commentDiv);
         // --- Handle the JSON Request Data ---
         // If request_data is a string, parse it. If it's already an object, use it directly.
         const details = typeof request.request_data === 'string' 
@@ -1304,11 +1328,18 @@ async function loadOngoingExperiments() {
           <input type="text" id="extra_reason_${exp.request_id}" placeholder="e.g. Broken Glassware" style="width:100%; padding:5px;">
         </div>
         
-        <button class="btn btn-success btn-block" 
-            onclick="finalizeAndBill(${exp.request_id}, '${exp.proj_id}')"
-            style="margin-top:10px; background-color:#27ae60; color:white; width:100%; padding:10px; border:none; cursor:pointer;">
-          Complete & Apply Charges
-        </button>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn btn-success" 
+                onclick="finalizeAndBill(${exp.request_id}, '${exp.proj_id}')"
+                style="flex:1; background-color:#27ae60; color:white; padding:10px; border:none; cursor:pointer;">
+              Complete
+            </button>
+            <button class="btn btn-danger" 
+                onclick="cancelOngoingExperiment(${exp.request_id})"
+                style="flex:1; background-color:#c0392b; color:white; padding:10px; border:none; cursor:pointer;">
+              Cancel
+            </button>
+        </div>
       `;
       container.appendChild(div);
     });
@@ -1346,5 +1377,35 @@ async function finalizeAndBill(reqId, projId) {
   } catch (error) {
     console.error("Error finalizing:", error);
     alert("An error occurred.");
+  }
+}
+async function cancelOngoingExperiment(reqId) {
+  if (!confirm("Are you sure you want to CANCEL this experiment? This will refund the cost, free the slots, and mark the request as rejected.")) {
+      return;
+  }
+
+  const token = getCookie();
+  try {
+    const response = await fetch("http://localhost:8000/cancel_experiment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+          token: token, 
+          request_id: reqId
+      }),
+    });
+    
+    const result = await response.json();
+    
+    if (result.message.includes("ERROR")) {
+        alert(result.message);
+    } else {
+        alert(result.message);
+        loadOngoingExperiments(); // Refresh list to remove the cancelled item
+    }
+    
+  } catch (error) {
+    console.error("Error cancelling:", error);
+    alert("An error occurred while connecting to the server.");
   }
 }
