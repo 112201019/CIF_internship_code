@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from BaseModels import *
 from hashlib import sha256
 import database_handler
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = FastAPI()
 
@@ -296,17 +299,56 @@ async def decide_by_faculty_incharge(decision: Decision):
         print("error_show_user", err)
         return {"message":"ERROR"}
     
+# @app.post("/decide_by_staff_incharge")
+# async def decide_by_staff_incharge(decision: Decision):
+#     try:
+#         current_user = decision.token
+#         db = open_connection(current_user)
+#         result = database_handler.decide_by_staff_incharge(db, decision.request_id, decision.decision)
+#         db = None # dereference
+#         return {"message":result}
+#     except Exception as err:
+#         print("error_show_user", err)
+#         return {"message":"ERROR"}
+
 @app.post("/decide_by_staff_incharge")
 async def decide_by_staff_incharge(decision: Decision):
     try:
         current_user = decision.token
         db = open_connection(current_user)
+        
+        # 1. Execute the approval/rejection in the database
         result = database_handler.decide_by_staff_incharge(db, decision.request_id, decision.decision)
-        db = None # dereference
-        return {"message":result}
+        
+        # 2. Check if Approved, then send mail
+        if decision.decision.lower() == "approved":
+            print(f"Request {decision.request_id} approved. Sending email...")
+            
+            # Fetch the student's email
+            student_email = database_handler.get_student_email_from_request(db, decision.request_id)
+            
+            if student_email:
+                subject = f"Request Approved: ID {decision.request_id}"
+                body = f"""
+Hello,
+
+Your booking request (ID: {decision.request_id}) has been APPROVED by the Staff In-charge.
+
+You can now proceed with your experiment as scheduled.
+
+Regards,
+CIF Team
+"""
+                # Send the mail
+                send_email_notification(student_email, subject, body)
+            else:
+                print("Student email not found.")
+
+        db = None
+        return {"message": "Success"}
     except Exception as err:
-        print("error_show_user", err)
-        return {"message":"ERROR"}
+        print("error_decide_staff", err)
+        return {"message": "ERROR: " + str(err)}
     
 @app.post("/check_status")
 async def check_status(request: Simple_Request):
@@ -745,3 +787,33 @@ async def cancel_experiment_endpoint(request: Request):
     except Exception as err:
         print("error_cancel", err)
         return {"message": "ERROR: " + str(err)}
+    
+def send_email_notification(to_email: str, subject: str, body: str):
+    """Sends an email using your personal Gmail account."""
+    # --- CONFIGURATION ---
+    SENDER_EMAIL = "sriramnangunoori1@gmail.com"
+    
+    # PASTE YOUR 16-CHARACTER APP PASSWORD HERE (Keep the quotes)
+    SENDER_PASSWORD = "xrec sssu vfts utnl"  # <--- REPLACE THIS WITH YOUR REAL APP PASSWORD
+    
+    SMTP_SERVER = "smtp.gmail.com"
+    SMTP_PORT = 587
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Connect to Gmail
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls() # Secure connection
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        
+        # Send
+        server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
+        server.quit()
+        print(f"Email successfully sent to {to_email}")
+    except Exception as e:
+        print(f"Error sending email: {e}")

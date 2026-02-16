@@ -817,3 +817,19 @@ def cancel_experiment(db: PostgresqlDB, request_id: int):
     
     # Execute the combined block
     db.execute_ddl_and_dml_commands(combined_query)
+
+def get_student_email_from_request(db: PostgresqlDB, request_id: int):
+    """Fetches the email ID of the student who made the request."""
+    # Join 'student' and 'request' tables to find the mail_id
+    query = f"""
+        SELECT s.mail_id 
+        FROM student s
+        JOIN request r ON s.student_id = r.student_id
+        WHERE r.request_id = {request_id}
+    """
+    result = list(db.execute_dql_commands(query))
+    
+    # If found, return the email string
+    if result:
+        return result[0][0]
+    return None
