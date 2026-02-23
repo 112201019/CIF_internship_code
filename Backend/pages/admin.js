@@ -22,11 +22,13 @@ function switchSection(button) {
     activateButton(button);
     const section = button.getAttribute('data-section');
     
-    // Hide the toolbar for project approvals
     const toolbar = document.getElementById('toolbar');
     if (section === 'project_approval') {
         if (toolbar) toolbar.style.display = 'none';
         showProjectApprovals();
+    } else if (section === 'reports') {
+        if (toolbar) toolbar.style.display = 'none';
+        showReportsSection();
     } else {
         if (toolbar) toolbar.style.display = 'flex';
         showSection(section);
@@ -776,4 +778,124 @@ function addQuestionRow() {
         <button type="button" onclick="this.parentElement.remove()" style="background:red; color:white; border:none;">X</button>
     `;
     document.getElementById('question_rows').appendChild(div);
+}
+
+async function showReportsSection() {
+    const contentArea = document.getElementById('contentArea');
+    contentArea.innerHTML = `<p>Loading faculty list...</p>`;
+    
+    const token = getCookie();
+    try {
+        const response = await fetch("http://localhost:8000/show_all_faculty", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
+        });
+        const data = await response.json();
+        
+        let facultyOptions = '<option value="" disabled selected>-- Select Faculty --</option>';
+        if (data.message && Array.isArray(data.message)) {
+            data.message.forEach(f => {
+                facultyOptions += `<option value="${f.faculty_id}">${f.faculty_name} (${f.faculty_id})</option>`;
+            });
+        }
+
+        contentArea.innerHTML = `
+            <div class="form-container" style="max-width: 600px;">
+                <h2>Export Faculty Experiment Report</h2>
+                <form id="reportForm" onsubmit="handleReportExport(event)">
+                    <div class="form-group">
+                        <label>Select Faculty:</label>
+                        <select id="report_faculty_id" required>
+                            ${facultyOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Start Date:</label>
+                        <input type="date" id="report_start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date:</label>
+                        <input type="date" id="report_end_date" required>
+                    </div>
+                    <button type="submit">Download Excel (CSV)</button>
+                </form>
+                <div id="reportMessage" style="margin-top:15px; font-weight:bold;"></div>
+            </div>
+        `;
+    } catch (error) {
+        contentArea.innerHTML = `<div class="error-message">Failed to load faculty: ${error.message}</div>`;
+    }
+}
+
+async function handleReportExport(event) {
+    event.preventDefault();
+    const msgDiv = document.getElementById("reportMessage");
+    msgDiv.textContent = "Generating report...";
+    msgDiv.style.color = "black";
+
+    const token = getCookie();
+    const faculty_id = document.getElementById("report_faculty_id").value;
+    const start_date = document.getElementById("report_start_date").value;
+    const end_date = document.getElementById("report_end_date").value;
+
+    try {
+        const response = await fetch("http://localhost:8000/admin/export_report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, faculty_id, start_date, end_date })
+        });
+        const result = await response.json();
+
+        if (result.message === "success") {
+            const data = result.data;
+            if (data.length === 0) {
+                msgDiv.textContent = "No records found for the selected faculty and date range.";
+                msgDiv.style.color = "red";
+                return;
+            }
+
+            // Convert JSON to Excel-compatible CSV
+            let csvContent = "S.no,Request ID,Equipment Name,Equipment ID,Project Name,Experiment Finished Date,Experiment Scheduled Time,Slots Booked,Initial Cost,Extra Charges,Reason for Extra Charges,Total Charges\n";
+            
+            data.forEach((row, index) => {
+                const escapeCsv = (str) => '"' + String(str).replace(/"/g, '""') + '"';
+                
+                const rowData = [
+                    index + 1,
+                    row.request_id,
+                    escapeCsv(row.equipment_name),
+                    escapeCsv(row.equipment_id),
+                    escapeCsv(row.project_title),
+                    escapeCsv(row.completion_time),
+                    escapeCsv(row.slot_time),
+                    row.slot_count,
+                    row.initial_cost,
+                    row.extra_charges,
+                    escapeCsv(row.remark),
+                    row.total_charges
+                ];
+                csvContent += rowData.join(",") + "\n";
+            });
+
+            // Trigger the download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Report_${faculty_id}_${start_date}_to_${end_date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            msgDiv.textContent = "Report downloaded successfully!";
+            msgDiv.style.color = "green";
+        } else {
+            msgDiv.textContent = "Failed: " + result.message;
+            msgDiv.style.color = "red";
+        }
+    } catch (err) {
+        msgDiv.textContent = "Error: " + err.message;
+        msgDiv.style.color = "red";
+    }
 }

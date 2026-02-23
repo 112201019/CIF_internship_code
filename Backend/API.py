@@ -281,10 +281,19 @@ async def decide_by_super_visor(decision: Decision):
         current_user = decision.token
         db = open_connection(current_user)
         result = database_handler.decide_by_super_visor(db, decision.request_id, decision.decision)
+        
+        # NEW: Send email if rejected
+        if decision.decision.lower() == "rejected":
+            student_email = database_handler.get_student_email_from_request(db, decision.request_id)
+            if student_email:
+                subject = f"Equipment Request Rejected: ID {decision.request_id}"
+                body = f"Hello,\n\nYour booking request (ID: {decision.request_id}) has been REJECTED by your Supervisor.\n\nPlease contact them for further details.\n\nRegards,\nCIF Team"
+                send_email_notification(student_email, subject, body)
+
         db = None # dereference
-        return {"message":result}
+        return {"message": "Success"}
     except Exception as err:
-        print("error_show_user", err)
+        print("error_decide_supervisor", err)
         return {"message":"ERROR"}
 
 @app.post("/decide_by_faculty_incharge")
@@ -293,10 +302,19 @@ async def decide_by_faculty_incharge(decision: Decision):
         current_user = decision.token
         db = open_connection(current_user)
         result = database_handler.decide_by_faculty_incharge(db, decision.request_id, decision.decision)
+        
+        # NEW: Send email if rejected
+        if decision.decision.lower() == "rejected":
+            student_email = database_handler.get_student_email_from_request(db, decision.request_id)
+            if student_email:
+                subject = f"Equipment Request Rejected: ID {decision.request_id}"
+                body = f"Hello,\n\nYour booking request (ID: {decision.request_id}) has been REJECTED by the Faculty In-Charge.\n\nPlease contact them for further details.\n\nRegards,\nCIF Team"
+                send_email_notification(student_email, subject, body)
+
         db = None # dereference
-        return {"message":result}
+        return {"message": "Success"}
     except Exception as err:
-        print("error_show_user", err)
+        print("error_decide_faculty", err)
         return {"message":"ERROR"}
     
 # @app.post("/decide_by_staff_incharge")
@@ -320,29 +338,23 @@ async def decide_by_staff_incharge(decision: Decision):
         # 1. Execute the approval/rejection in the database
         result = database_handler.decide_by_staff_incharge(db, decision.request_id, decision.decision)
         
-        # 2. Check if Approved, then send mail
-        if decision.decision.lower() == "approved":
-            print(f"Request {decision.request_id} approved. Sending email...")
-            
-            # Fetch the student's email
-            student_email = database_handler.get_student_email_from_request(db, decision.request_id)
-            
-            if student_email:
+        # 2. Fetch the student's email
+        student_email = database_handler.get_student_email_from_request(db, decision.request_id)
+        
+        if student_email:
+            if decision.decision.lower() == "approved":
+                print(f"Request {decision.request_id} approved. Sending email...")
                 subject = f"Request Approved: ID {decision.request_id}"
-                body = f"""
-Hello,
-
-Your booking request (ID: {decision.request_id}) has been APPROVED by the Staff In-charge.
-
-You can now proceed with your experiment as scheduled.
-
-Regards,
-CIF Team
-"""
-                # Send the mail
+                body = f"Hello,\n\nYour booking request (ID: {decision.request_id}) has been APPROVED by the Staff In-charge.\n\nYou can now proceed with your experiment as scheduled.\n\nRegards,\nCIF Team"
                 send_email_notification(student_email, subject, body)
-            else:
-                print("Student email not found.")
+                
+            elif decision.decision.lower() == "rejected":
+                print(f"Request {decision.request_id} rejected. Sending email...")
+                subject = f"Equipment Request Rejected: ID {decision.request_id}"
+                body = f"Hello,\n\nYour booking request (ID: {decision.request_id}) has been REJECTED by the Staff In-Charge.\n\nPlease contact them for further details.\n\nRegards,\nCIF Team"
+                send_email_notification(student_email, subject, body)
+        else:
+            print("Student email not found.")
 
         db = None
         return {"message": "Success"}
@@ -729,7 +741,6 @@ async def get_ongoing_experiments(token: Token):
         return {"message": "ERROR"}
     
 @app.post("/finalize_experiment")
-@app.post("/finalize_experiment")
 async def finalize_experiment(request: Request):
     try:
         # 1. Parse Data
@@ -749,12 +760,13 @@ async def finalize_experiment(request: Request):
             UPDATE experiment_tracking 
             SET is_completed = TRUE, 
                 actual_completion_time = NOW(), 
-                remark = :remark
+                remark = :remark,
+                extra_charges = :extra_charges  
             WHERE request_id = :req_id
         """
         
         # Execute with parameters
-        db.execute_ddl_and_dml_commands(query_update, values={"remark": notes, "req_id": req_id})
+        db.execute_ddl_and_dml_commands(query_update, values={"remark": notes, "extra_charges": extra_charges, "req_id": req_id})
         
         # 4. Deduct Extra Charges (Only if applicable)
         if extra_charges > 0:
@@ -817,3 +829,18 @@ def send_email_notification(to_email: str, subject: str, body: str):
         print(f"Email successfully sent to {to_email}")
     except Exception as e:
         print(f"Error sending email: {e}")
+
+from BaseModels import ReportRequest
+
+@app.post("/admin/export_report")
+async def export_report(data: ReportRequest):
+    try:
+        if not is_admin(data.token):
+            return {"message": "Unauthorized"}
+        db = open_connection(data.token)
+        result = database_handler.get_faculty_report(db, data.faculty_id, data.start_date, data.end_date)
+        db = None
+        return {"message": "success", "data": result}
+    except Exception as err:
+        print(f"Report error: {err}")
+        return {"message": f"ERROR: {str(err)}"}

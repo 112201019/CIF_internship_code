@@ -111,3 +111,9 @@ class DeductFundsModel(BaseModel):
     project_id: str
     amount: int
     reason: str
+
+class ReportRequest(BaseModel):
+    token: str
+    faculty_id: str
+    start_date: str
+    end_date: str

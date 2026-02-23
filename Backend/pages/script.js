@@ -376,7 +376,7 @@ function showPendingRequestsSuper() {
           `;
         requestDiv.appendChild(approveButton);
         approveButton.addEventListener("click", () => {
-          approveRequest(request.request_id);
+          approveRequest(request.request_id, approveButton);
         });
 
         const rejectButton = document.createElement("button");
@@ -391,26 +391,24 @@ function showPendingRequestsSuper() {
           `;
         requestDiv.appendChild(rejectButton);
         rejectButton.addEventListener("click", () => {
-          rejectRequest(request.request_id);
+          rejectRequest(request.request_id, rejectButton);
         });
       });
     });
 }
 
-function approveRequest(requestId) {
-  const token = getCookie();
-  const requestData = {
-    token: token,
-    request_id: requestId,
-    decision: "approved",
-  };
+// --- SUPERVISOR DECISIONS ---
+function approveRequest(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Approving...`;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
 
+  const token = getCookie();
   fetch("http://localhost:8000/decide_by_super_visor", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -420,23 +418,23 @@ function approveRequest(requestId) {
     .catch((error) => {
       alert("An error occurred while approving the request.");
       console.error(error);
+      btn.innerHTML = originalText;
+      btn.classList.remove("btn-loading");
+      btn.disabled = false;
     });
 }
 
-function rejectRequest(requestId) {
-  const token = getCookie();
-  const requestData = {
-    token: token,
-    request_id: requestId,
-    decision: "rejected",
-  };
+function rejectRequest(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Rejecting...`;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
 
+  const token = getCookie();
   fetch("http://localhost:8000/decide_by_super_visor", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -444,8 +442,11 @@ function rejectRequest(requestId) {
       showPendingRequestsSuper();
     })
     .catch((error) => {
-      alert("An error occurred while approving the request.");
+      alert("An error occurred while rejecting the request.");
       console.error(error);
+      btn.innerHTML = originalText;
+      btn.classList.remove("btn-loading");
+      btn.disabled = false;
     });
 }
 
@@ -562,7 +563,7 @@ function showPendingRequestsIn() {
           `;
         requestDiv.appendChild(approveButton);
         approveButton.addEventListener("click", () => {
-          approveRequestIN(request.request_id);
+          approveRequestIN(request.request_id, approveButton);
         });
 
         const rejectButton = document.createElement("button");
@@ -577,26 +578,24 @@ function showPendingRequestsIn() {
           `;
         requestDiv.appendChild(rejectButton);
         rejectButton.addEventListener("click", () => {
-          rejectRequestIN(request.request_id);
+          rejectRequestIN(request.request_id, rejectButton);
         });
       });
     });
 }
 
-function approveRequestIN(requestId) {
-  const token = getCookie();
-  const requestData = {
-    token: token,
-    request_id: requestId,
-    decision: "approved",
-  };
+// --- FACULTY INCHARGE DECISIONS ---
+function approveRequestIN(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Approving...`;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
 
+  const token = getCookie();
   fetch("http://localhost:8000/decide_by_faculty_incharge", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -606,23 +605,23 @@ function approveRequestIN(requestId) {
     .catch((error) => {
       alert("An error occurred while approving the request.");
       console.error(error);
+      btn.innerHTML = originalText;
+      btn.classList.remove("btn-loading");
+      btn.disabled = false;
     });
 }
 
-function rejectRequestIN(requestId) {
-  const token = getCookie();
-  const requestData = {
-    token: token,
-    request_id: requestId,
-    decision: "rejected",
-  };
+function rejectRequestIN(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Rejecting...`;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
 
+  const token = getCookie();
   fetch("http://localhost:8000/decide_by_faculty_incharge", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -630,11 +629,13 @@ function rejectRequestIN(requestId) {
       showPendingRequestsIn();
     })
     .catch((error) => {
-      alert("An error occurred while approving the request.");
+      alert("An error occurred while rejecting the request.");
       console.error(error);
+      btn.innerHTML = originalText;
+      btn.classList.remove("btn-loading");
+      btn.disabled = false;
     });
 }
-
 // Staff
 function showPendingRequestsStaff() {
   const token = getCookie();
@@ -750,7 +751,7 @@ function showPendingRequestsStaff() {
           `;
         requestDiv.appendChild(approveButton);
         approveButton.addEventListener("click", () => {
-          approveRequestStaff(request.request_id);
+          approveRequestStaff(request.request_id, approveButton);
         });
 
         const rejectButton = document.createElement("button");
@@ -765,26 +766,23 @@ function showPendingRequestsStaff() {
           `;
         requestDiv.appendChild(rejectButton);
         rejectButton.addEventListener("click", () => {
-          rejectRequestStaff(request.request_id);
+          rejectRequestStaff(request.request_id, rejectButton);
         });
       });
     });
 }
 
-function approveRequestStaff(requestId) {
-  const token = getCookie();
-  const requestData = {
-    token: token,
-    request_id: requestId,
-    decision: "approved",
-  };
+function approveRequestStaff(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Approving...`;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
 
+  const token = getCookie();
   fetch("http://localhost:8000/decide_by_staff_incharge", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -794,23 +792,23 @@ function approveRequestStaff(requestId) {
     .catch((error) => {
       alert("An error occurred while approving the request.");
       console.error(error);
+      btn.innerHTML = originalText;
+      btn.classList.remove("btn-loading");
+      btn.disabled = false;
     });
 }
 
-function rejectRequestStaff(requestId) {
-  const token = getCookie();
-  const requestData = {
-    token: token,
-    request_id: requestId,
-    decision: "rejected",
-  };
+function rejectRequestStaff(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `<span class="spinner"></span> Rejecting...`;
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
 
+  const token = getCookie();
   fetch("http://localhost:8000/decide_by_staff_incharge", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -818,11 +816,13 @@ function rejectRequestStaff(requestId) {
       showPendingRequestsStaff();
     })
     .catch((error) => {
-      alert("An error occurred while approving the request.");
+      alert("An error occurred while rejecting the request.");
       console.error(error);
+      btn.innerHTML = originalText;
+      btn.classList.remove("btn-loading");
+      btn.disabled = false;
     });
 }
-
 // Show all requests of the current user
 // Show all requests of the current user
 async function showRequestsAll() {

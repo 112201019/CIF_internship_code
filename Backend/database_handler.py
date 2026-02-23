@@ -833,3 +833,46 @@ def get_student_email_from_request(db: PostgresqlDB, request_id: int):
     if result:
         return result[0][0]
     return None
+def get_faculty_report(db: PostgresqlDB, faculty_id: str, start_date: str, end_date: str):
+    query = """
+        SELECT 
+            r.request_id,
+            e.equipment_name,
+            e.equipment_id,
+            p.project_title,
+            et.actual_completion_time,
+            s.slot_time, 
+            r.slot_count,
+            COALESCE(r.cost, 0) AS initial_cost,
+            COALESCE(et.extra_charges, 0) AS extra_charges,
+            et.remark,
+            (COALESCE(r.cost, 0) + COALESCE(et.extra_charges, 0)) AS total_charges
+        FROM request r
+        JOIN slot s ON r.slot_id = s.slot_id
+        JOIN equipment e ON s.equipment_id = e.equipment_id
+        JOIN project p ON r.proj_id = p.project_id
+        JOIN experiment_tracking et ON r.request_id = et.request_id
+        WHERE p.faculty_incharge_id = :faculty_id
+          AND et.is_completed = TRUE
+          AND et.actual_completion_time >= CAST(:start_date AS timestamp)
+          AND et.actual_completion_time <= CAST(:end_date AS timestamp) + interval '1 day'
+        ORDER BY et.actual_completion_time ASC
+    """
+    rows = list(db.execute_dql_commands(query, {"faculty_id": faculty_id, "start_date": start_date, "end_date": end_date}))
+    
+    result = []
+    for row in rows:
+        result.append({
+            "request_id": row[0],
+            "equipment_name": row[1],
+            "equipment_id": row[2],
+            "project_title": row[3],
+            "completion_time": str(row[4]) if row[4] else "N/A",
+            "slot_time": str(row[5]) if row[5] else "N/A",
+            "slot_count": row[6],
+            "initial_cost": row[7],
+            "extra_charges": row[8],
+            "remark": row[9] or "N/A",
+            "total_charges": row[10]
+        })
+    return result
