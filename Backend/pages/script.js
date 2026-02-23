@@ -1409,3 +1409,91 @@ async function cancelOngoingExperiment(reqId) {
     alert("An error occurred while connecting to the server.");
   }
 }
+
+async function openProfileModal() {
+    const token = getCookie();
+    
+    // Fetch profile data
+    const res = await fetch("http://localhost:8000/get_profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+    });
+    const data = await res.json();
+    
+    if (data.message !== "success") {
+        alert(data.message);
+        return;
+    }
+    
+    const user = data.data;
+
+    // Create modal dynamically
+    const modalHtml = `
+        <div id="profileModal" class="modal" style="display:block; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
+            <div class="modal-content" style="background-color:#fff; margin:5% auto; padding:30px; border-radius:8px; width:90%; max-width:400px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <span onclick="document.getElementById('profileModal').remove()" style="position:absolute; right:20px; top:15px; font-size:24px; cursor:pointer;">&times;</span>
+                <h2 style="margin-top:0; color:#2c3e50;">My Profile</h2>
+                <p style="color:#666; font-size:13px; margin-bottom:20px;">For security reasons, you can only update your Email and Password.</p>
+                <form id="profileForm" onsubmit="handleProfileUpdate(event)">
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:600;">ID</label>
+                        <input type="text" value="${user.id}" disabled style="width:100%; padding:10px; background:#e9ecef; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:600;">Name</label>
+                        <input type="text" value="${user.name}" disabled style="width:100%; padding:10px; background:#e9ecef; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:600;">Department</label>
+                        <input type="text" value="${user.department}" disabled style="width:100%; padding:10px; background:#e9ecef; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:600;">Email</label>
+                        <input type="email" id="prof_email" value="${user.mail_id}" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                    </div>
+                    <div style="margin-bottom:25px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:600;">Password</label>
+                        <input type="text" id="prof_pwd" value="${user.password}" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                    </div>
+                    <button type="submit" style="width:100%; padding:12px; background:#3498db; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Update Profile</button>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function handleProfileUpdate(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span> Updating...`;
+    btn.classList.add("btn-loading");
+
+    const token = getCookie();
+    const mail_id = document.getElementById("prof_email").value;
+    const password = document.getElementById("prof_pwd").value;
+
+    try {
+        const res = await fetch("http://localhost:8000/update_profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, mail_id, password })
+        });
+        const data = await res.json();
+        alert(data.message);
+        
+        if (data.message.includes("successfully")) {
+            document.getElementById('profileModal').remove();
+        }
+    } catch(err) {
+        alert("Network Error: Could not update profile.");
+    } finally {
+        if(document.getElementById('profileModal')){
+            btn.innerHTML = originalText;
+            btn.classList.remove("btn-loading");
+        }
+    }
+}

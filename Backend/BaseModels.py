@@ -117,3 +117,8 @@ class ReportRequest(BaseModel):
     faculty_id: str
     start_date: str
     end_date: str
+
+class ProfileUpdateRequest(BaseModel):
+    token: str
+    mail_id: str
+    password: str

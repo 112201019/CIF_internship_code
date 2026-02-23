@@ -844,3 +844,73 @@ async def export_report(data: ReportRequest):
     except Exception as err:
         print(f"Report error: {err}")
         return {"message": f"ERROR: {str(err)}"}
+    
+@app.post("/get_profile")
+async def get_profile(token_data: Token):
+    try:
+        # Admins don't have a profile table
+        if is_admin(token_data.token):
+            return {"message": "Admin profiles are managed via the database console."}
+            
+        db = open_connection(token_data.token)
+        
+        # FIX: Changed 'department' to 'department_id as department' for the faculty table
+        query = """
+            SELECT student_id as id, student_name as name, mail_id, department, password, 'student' as role FROM student WHERE student_id = current_user
+            UNION ALL
+            SELECT faculty_id, faculty_name, mail_id, department_id as department, password, 'faculty' as role FROM faculty WHERE faculty_id = current_user
+            UNION ALL
+            SELECT staff_id, staff_name, mail_id, department, password, 'staff' as role FROM staff WHERE staff_id = current_user
+        """
+        result = list(db.execute_dql_commands(query))
+        
+        if not result:
+            return {"message": "User not found"}
+        
+        user_data = {
+            "id": result[0][0],
+            "name": result[0][1],
+            "mail_id": result[0][2],
+            "department": result[0][3],
+            "password": result[0][4],
+            "role": result[0][5]
+        }
+        db = None
+        return {"message": "success", "data": user_data}
+    except Exception as err:
+        return {"message": f"ERROR: {str(err)}"}
+@app.post("/update_profile")
+async def update_profile(data: ProfileUpdateRequest):
+    try:
+        db = open_connection(data.token)
+        
+        # Find user role to update the correct table
+        query_find = """
+            SELECT 'student' as role FROM student WHERE student_id = current_user
+            UNION ALL
+            SELECT 'faculty' as role FROM faculty WHERE faculty_id = current_user
+            UNION ALL
+            SELECT 'staff' as role FROM staff WHERE staff_id = current_user
+        """
+        result = list(db.execute_dql_commands(query_find))
+        
+        if not result:
+            return {"message": "User not found"}
+            
+        role = result[0][0]
+        
+        # Thanks to RLS, even if someone hacked this query to say "WHERE student_id = 'someone_else'", 
+        # PostgreSQL would block it!
+        if role == 'student':
+            update_q = "UPDATE student SET mail_id = :mail, password = :pwd WHERE student_id = current_user"
+        elif role == 'faculty':
+            update_q = "UPDATE faculty SET mail_id = :mail, password = :pwd WHERE faculty_id = current_user"
+        elif role == 'staff':
+            update_q = "UPDATE staff SET mail_id = :mail, password = :pwd WHERE staff_id = current_user"
+            
+        db.execute_ddl_and_dml_commands(update_q, values={"mail": data.mail_id, "pwd": data.password})
+        
+        db = None
+        return {"message": "Profile updated successfully! Note: Your DB credentials have been synced."}
+    except Exception as err:
+        return {"message": f"ERROR: {str(err)}"}
