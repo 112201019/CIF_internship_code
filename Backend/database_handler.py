@@ -876,3 +876,23 @@ def get_faculty_report(db: PostgresqlDB, faculty_id: str, start_date: str, end_d
             "total_charges": row[10]
         })
     return result
+
+def get_staff_equipment(db: PostgresqlDB):
+    """Fetches equipment managed by the currently logged-in staff member."""
+    query = "SELECT equipment_id, equipment_name FROM equipment WHERE staff_incharge_id = current_user"
+    rows = list(db.execute_dql_commands(query))
+    result = [{"equipment_id": row[0], "equipment_name": row[1]} for row in rows]
+    return result
+
+def get_equipment_slots(db: PostgresqlDB, equipment_id: str):
+    """Fetches all future slots for a specific equipment."""
+    # We fetch slots from now onwards to keep the view relevant
+    query = f"""
+        SELECT slot_id, slot_time, slot_status 
+        FROM slot 
+        WHERE equipment_id = '{equipment_id}' AND slot_time >= NOW()
+        ORDER BY slot_time ASC
+    """
+    rows = list(db.execute_dql_commands(query))
+    result = [{"slot_id": row[0], "slot_time": str(row[1]), "slot_status": row[2]} for row in rows]
+    return result

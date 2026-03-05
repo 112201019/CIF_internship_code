@@ -118,19 +118,38 @@
         
         <div id="ongoingExperimentsList" class="request-list" style="margin-top:15px;"></div>
       </div>
-
+      <div class="card" style="border-top: 4px solid #3498db; grid-column: 1 / -1;">
+        <h3>Equipment Slot Matrix</h3>
+        <p>Select your equipment to view the live status of all generated slots.</p>
+        
+        <div style="display:flex; gap:10px; margin-bottom:15px; max-width: 500px;">
+            <select id="staffEquipmentSelect" style="flex:1; padding:10px; border-radius:4px; border:1px solid #ddd;"></select>
+            <button class="btn btn-info" onclick="loadEquipmentSlots()" style="background:#3498db; color:white; border:none; border-radius:4px; padding:0 20px; font-weight:bold; cursor:pointer;">View Slots</button>
+        </div>
+        
+        <div id="slotMatrixContainer" style="display:flex; flex-wrap:wrap; gap:10px; max-height:400px; overflow-y:auto; padding:15px; background:#f8f9fa; border:1px solid #ddd; border-radius:6px;">
+            <p style="color:#777; width:100%; text-align:center; font-style:italic;">Select an equipment and click View Slots.</p>
+        </div>
+        
+        <div style="margin-top:15px; display:flex; gap:20px; font-size:13px; font-weight:bold; justify-content:center; padding-top: 15px; border-top: 1px solid #eee;">
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:14px;height:14px;background:#2ecc71; border-radius:3px;"></div> Free</span>
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:14px;height:14px;background:#f39c12; border-radius:3px;"></div> Pending</span>
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:14px;height:14px;background:#e74c3c; border-radius:3px;"></div> Booked</span>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const token = getCookie("session_token");
+      const token = getCookie("session_token"); // or getCookie() depending on your script
       if (!token) {
         window.location.href = "login.html";
         return;
       }
       show_current_user();
       showPendingRequestsStaff();
+      loadStaffEquipment(); // <--- ADD THIS LINE
     });
 
     // --- 1. REQUEST PARSING ---
@@ -195,6 +214,97 @@
         } catch (err) {
             resDiv.style.color = "red";
             resDiv.innerText = "Error: " + err.message;
+        }
+    }
+    // --- 4. SLOT MATRIX LOGIC ---
+    async function loadStaffEquipment() {
+        const token = getCookie();
+        try {
+            const res = await fetch("http://localhost:8000/staff/my_equipment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token })
+            });
+            const data = await res.json();
+            const select = document.getElementById("staffEquipmentSelect");
+            
+            select.innerHTML = "<option value='' disabled selected>-- Select Equipment --</option>";
+            if (data.message === "success" && data.data) {
+                data.data.forEach(eq => {
+                    select.innerHTML += `<option value="${eq.equipment_id}">${eq.equipment_name} (${eq.equipment_id})</option>`;
+                });
+            }
+        } catch (e) {
+            console.error("Error loading staff equipment", e);
+        }
+    }
+
+    async function loadEquipmentSlots() {
+        const token = getCookie();
+        const equipId = document.getElementById("staffEquipmentSelect").value;
+        const container = document.getElementById("slotMatrixContainer");
+        
+        if (!equipId) {
+            alert("Please select an equipment from the dropdown first.");
+            return;
+        }
+        
+        container.innerHTML = "<p style='width:100%; text-align:center;'>Loading slots...</p>";
+        
+        try {
+            const res = await fetch("http://localhost:8000/staff/equipment_slots", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: token, ID: equipId }) 
+            });
+            const data = await res.json();
+            
+            if (data.message === "success") {
+                container.innerHTML = "";
+                if (data.data.length === 0) {
+                    container.innerHTML = "<p style='width:100%; text-align:center; color:#777;'>No upcoming slots found for this equipment.</p>";
+                    return;
+                }
+                
+                data.data.forEach(slot => {
+                    // Format the date nicely
+                    const dateObj = new Date(slot.slot_time);
+                    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    
+                    // Determine Color
+                    let bgColor = "#bdc3c7"; 
+                    let statusTxt = slot.slot_status.toLowerCase();
+                    if (statusTxt === "free") bgColor = "#2ecc71"; // Green
+                    else if (statusTxt === "pending") bgColor = "#f39c12"; // Orange
+                    else bgColor = "#e74c3c"; // Red (Allocated/Booked)
+                    
+                    const slotDiv = document.createElement("div");
+                    slotDiv.style = `
+                        background-color: ${bgColor};
+                        color: white;
+                        padding: 12px;
+                        border-radius: 6px;
+                        text-align: center;
+                        min-width: 120px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        border: 1px solid rgba(0,0,0,0.1);
+                    `;
+                    slotDiv.innerHTML = `
+                        <strong style="font-size:0.95rem;">${dateStr}</strong>
+                        <span style="font-size:0.9rem; margin: 4px 0;">${timeStr}</span>
+                        <span style="font-size:0.75rem; text-transform:uppercase; font-weight:bold; letter-spacing:1px; background:rgba(0,0,0,0.2); padding:3px; border-radius:3px;">${statusTxt}</span>
+                    `;
+                    container.appendChild(slotDiv);
+                });
+            } else {
+                container.innerHTML = `<p style="color:red; width:100%; text-align:center;">Error: ${data.details}</p>`;
+            }
+        } catch(e) {
+            container.innerHTML = `<p style="color:red; width:100%; text-align:center;">Network Error occurred.</p>`;
         }
     }
   </script>

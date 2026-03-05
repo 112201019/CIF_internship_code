@@ -914,3 +914,24 @@ async def update_profile(data: ProfileUpdateRequest):
         return {"message": "Profile updated successfully! Note: Your DB credentials have been synced."}
     except Exception as err:
         return {"message": f"ERROR: {str(err)}"}
+    
+@app.post("/staff/my_equipment")
+async def get_staff_equipment_endpoint(token: Token):
+    try:
+        db = open_connection(token.token)
+        res = database_handler.get_staff_equipment(db)
+        db = None
+        return {"message": "success", "data": res}
+    except Exception as e:
+        return {"message": "ERROR", "details": str(e)}
+
+@app.post("/staff/equipment_slots")
+async def get_equipment_slots_endpoint(data: EquipmentByID): 
+    # Reuses your existing EquipmentByID model (which accepts token and ID)
+    try:
+        db = open_connection(data.token)
+        res = database_handler.get_equipment_slots(db, data.ID)
+        db = None
+        return {"message": "success", "data": res}
+    except Exception as e:
+        return {"message": "ERROR", "details": str(e)}
