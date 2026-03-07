@@ -1,98 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CIF Dashboard</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="script.js"></script>
-  </head>
-  <body>
-    <nav class="navbar">
-      <div class="logo">CIF</div>
-      <div class="user-menu">
-        <h3 class="current-user">User:</h3>
-        <div class="dropdown-content">
-          <button onclick="openProfileModal()">Profile</button>
-          <button onclick="logout()">Logout</button>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIF Student Portal</title>
+  
+  <script src="script.js"></script>
+  
+  <style>
+    /* --- GLOBAL STYLES --- */
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; }
+    h1, h2, h3, h4 { color: #2c3e50; margin-top: 0; }
+    
+    /* --- NAVBAR --- */
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: #2c3e50; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    .user-menu { position: relative; cursor: pointer; font-weight: 600; }
+    .user-menu:hover .dropdown-content { display: block; }
+    .current-user { margin: 0; font-size: 16px; }
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #fff; min-width: 150px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; z-index: 100; }
+    .dropdown-content button { width: 100%; padding: 12px 16px; text-align: left; border: none; background: none; cursor: pointer; font-size: 14px; color: #333; transition: background 0.2s; }
+    .dropdown-content button:hover { background-color: #f1f1f1; }
+
+    /* --- LAYOUT --- */
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .header { margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+    .header p { color: #666; margin: 5px 0 0 0; }
+    
+    .grid-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; margin-bottom: 30px; }
+
+    /* --- CARDS --- */
+    .card { background: #fff; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
+    .card h3 { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+    .card p { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
+    
+    /* --- BUTTONS --- */
+    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; font-size: 14px; }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background-color: #2980b9; color: white; }
+    .btn-success { background-color: #27ae60; color: white; }
+    .btn-warning { background-color: #f39c12; color: white; }
+    .btn-block { width: 100%; display: block; margin-bottom: 10px; }
+
+    /* --- TABLES & LISTS --- */
+    .table-container { width: 100%; overflow-y: auto; border: 1px solid #eee; border-radius: 5px; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
+    th { background-color: #f8f9fa; font-weight: 600; color: #555; position: sticky; top: 0; }
+    tr:hover { background-color: #fbfbfb; }
+    
+    .book-button { padding: 6px 12px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .book-button:hover { background-color: #219150; }
+
+    /* --- TRACK REQUEST STYLES --- */
+    .form-group { display: flex; gap: 10px; margin-top: auto; }
+    input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
+    
+    .request-info { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; background-color: #fdfdfd; }
+    .request-info h4 { margin-bottom: 12px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .request-info p { margin: 8px 0; color: #444; font-size: 0.95rem; }
+    .hidden { display: none; }
+
+    /* --- HISTORY GRID --- */
+    .request-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; max-height: 400px; overflow-y: auto; padding-right: 5px; }
+    .request-item { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; }
+    .request-item p { margin: 6px 0; font-size: 13px; color: #555; }
+    .request-item strong { color: #333; }
+  </style>
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="logo">CIF STUDENT PORTAL</div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <h3 class="current-user" style="margin: 0; font-size: 16px; font-weight: 500;">User: ...</h3>
+      <button onclick="openProfileModal()" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+        Profile
+      </button>
+      <button onclick="logout()" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+        Logout
+      </button>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <div class="header">
+      <h2>Welcome to your Dashboard</h2>
+      <p>Your central hub for equipment booking and request tracking.</p>
+    </div>
+
+    <!-- First Row: Equipment & Tracking -->
+    <div class="grid-row">
+      <!-- Card 1: Equipment -->
+      <div class="card" style="border-top: 4px solid #2980b9;">
+        <h3>Available Equipment</h3>
+        <p>Browse all available equipment and initiate a booking.</p>
+        <button onclick="fetchAndDisplayEquipments()" class="btn btn-primary btn-block">
+          Refresh Equipments
+        </button>
+        <div class="table-container" style="max-height: 250px;">
+          <table id="equipmentTable">
+            <thead>
+              <tr>
+                <th>Equipment Name</th>
+                <th style="width: 80px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="equipmentTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
         </div>
       </div>
-    </nav>
 
-    <div class="container">
-      <div class="header">
-        <h1>Welcome to CIF</h1>
-        <p>Your central hub for equipment booking and request tracking.</p>
-      </div>
-
-      <div class="card-container">
-        <div class="card">
-          <h2>Available Equipment</h2>
-          <p>Browse all available equipment and initiate a booking.</p>
-          <button onclick="fetchAndDisplayEquipments()" class="btn btn-primary">
-            Show Equipments
+      <!-- Card 2: Track Request -->
+      <div class="card" style="border-top: 4px solid #f39c12;">
+        <h3>Track a Request</h3>
+        <p>Enter your Request ID to check its current status across all approvers.</p>
+        
+        <div class="form-group">
+          <input type="text" id="requestIdInput" placeholder="e.g. 104" />
+          <button onclick="trackRequest()" class="btn btn-warning">
+            Search
           </button>
-          <div class="table-container">
-            <table id="equipmentTable">
-              <thead>
-                <tr>
-                  <th>Equipment Name</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="equipmentTableBody">
-                </tbody>
-            </table>
-          </div>
         </div>
 
-        <div class="card">
-          <h2>Track a Request</h2>
-          <p>Enter your Request ID to check its current status.</p>
-          <div class="track-request">
-            <input
-              type="text"
-              id="requestIdInput"
-              placeholder="Enter Request ID"
-            />
-            <button onclick="trackRequest()" class="btn btn-primary">
-              Track Request
-            </button>
-          </div>
-          <div class="request-info hidden" id="requestInfo">
-            <h3>Request Status</h3>
-            <p><strong>Request ID:</strong> <span id="reqId"></span></p>
-            <p><strong>Date:</strong> <span id="reqDate"></span></p>
-            <p><strong>Status:</strong> <span id="reqApproved"></span></p>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>My Booking History</h2>
-          <p>View all the equipment requests you have submitted.</p>
-          <button onclick="showRequestsAll()" class="btn btn-primary">
-            Show All My Requests
-          </button>
-          <div id="requestInfo2" class="show-requests">
-            </div>
+        <div class="request-info hidden" id="requestInfo">
+          <h4>Status Details</h4>
+          <p><strong>Request ID:</strong> <span id="reqId"></span></p>
+          <p><strong>Date Checked:</strong> <span id="reqDate"></span></p>
+          <p><strong>Status:</strong> <span id="reqApproved" style="text-transform: uppercase; color: #d35400;"></span></p>
         </div>
       </div>
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Use the corrected cookie function from our previous conversation
-        const token = getCookie("session_token"); 
-        if (!token) {
-          window.location.href = "login.html";
-        }
+    <!-- Second Row: History -->
+    <div class="grid-row">
+      <div class="card" style="border-top: 4px solid #27ae60; grid-column: 1 / -1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+          <h3 style="border: none; padding: 0; margin: 0;">My Booking History</h3>
+          <button onclick="showRequestsAll()" class="btn btn-success">
+            Load My Requests
+          </button>
+        </div>
+        <p style="margin-bottom: 5px;">View all the equipment requests you have submitted so far.</p>
         
-        // checkUser will handle redirects for faculty/staff
-        checkUser(); 
-        show_current_user();
-        
-        fetchAndDisplayEquipments();
-      });
-    </script>
-  </body>
+        <div id="requestInfo2" class="request-list">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const token = getCookie("session_token") || getCookie(); // Fallback depending on exact naming
+
+      if (!token) {
+        window.location.href = "login.html";
+        return;
+      }
+      
+      // Check user role, redirect if not student
+      checkUser();
+
+      // Show username in top right
+      show_current_user();
+      
+      // Auto-load equipments on page load
+      fetchAndDisplayEquipments();
+    });
+  </script>
+</body>
 </html>

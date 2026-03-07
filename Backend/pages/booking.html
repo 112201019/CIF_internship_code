@@ -1,82 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>CIF</title>
-    <script src="script.js"></script> 
-    <script src="book.js"></script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIF - Book Equipment</title>
+  
+  <script src="script.js"></script>
+  <script src="book.js"></script>
+  
+  <style>
+    /* --- GLOBAL STYLES --- */
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; }
+    h1, h2, h3, h4 { color: #2c3e50; margin-top: 0; }
+    
+    /* --- NAVBAR --- */
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: #2c3e50; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    
+    /* Dropdown Logic */
+    .user-menu { position: relative; cursor: pointer; display: inline-block; padding: 10px 0; }
+    .current-user { margin: 0; font-size: 16px; font-weight: 500; }
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #ffffff; min-width: 150px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 4px; z-index: 1000; overflow: hidden; }
+    .dropdown-content button { width: 100%; padding: 12px 16px; text-align: left; border: none; background: none; cursor: pointer; font-size: 14px; color: #333; font-family: inherit; }
+    .dropdown-content button:hover { background-color: #f1f1f1; }
+    .user-menu:hover .dropdown-content { display: block; }
 
-    <style>
-      /* --- GLOBAL STYLES --- */
-      body { margin: 0; font-family: Arial, sans-serif; }
-      .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #333; color: #fff; }
-      .logo { font-size: 24px; font-weight: bold; }
-      .user-menu { position: relative; }
-      .user-menu:hover .dropdown-content { display: block; }
-      .dropdown-content { display: none; position: absolute; right: 0; background-color: #f9f9f9; min-width: 120px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); z-index: 1; }
-      .dropdown-content button { color: black; padding: 8px 16px; text-align: left; border: none; background: none; cursor: pointer; width: 100%; }
-      .dropdown-content button:hover { background-color: #ddd; }
+    /* --- LAYOUT --- */
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .header { margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+    .header p { color: #666; margin: 5px 0 0 0; }
 
-      .content { margin: 20px; margin-bottom: 20px; }
-      
-      #projectListContainer { margin: 0 20px 20px 20px; }
-      #projectTable { width: 100%; border-collapse: collapse; margin-top: 10px; }
-      #projectTable th, #projectTable td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-      #projectTable th { background-color: #f4f4f4; }
-      
-      .select-project-btn { padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-      .select-project-btn:hover { background-color: #0056b3; }
-      .selected-project { background-color: #d4edda !important; }
+    /* --- CARDS --- */
+    .card { background: #fff; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; box-sizing: border-box; }
+    .card h3 { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
 
-      #books { padding: 0 20px; }
-      .book { margin-top: 20px; padding: 10px; border: 1px solid #333; border-radius: 5px; }
-      .slot { margin-top: 20px; padding: 10px; border: 1px solid #333; border-radius: 5px; background-color: #f9f9f9; }
+    /* --- TABLES --- */
+    .table-container { width: 100%; overflow-y: auto; max-height: 300px; border: 1px solid #eee; border-radius: 5px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
+    th { background-color: #f8f9fa; font-weight: 600; color: #555; position: sticky; top: 0; }
+    tr:hover { background-color: #fbfbfb; }
+
+    /* --- BUTTONS --- */
+    .select-project-btn { padding: 6px 12px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+    .select-project-btn:hover { background-color: #2980b9; }
+    .selected-project { background-color: #e8f4f8 !important; border-left: 4px solid #3498db; }
+
+    .request-button { background: #2c3e50 !important; border-radius: 4px; transition: 0.2s; font-weight: 600; }
+    .request-button:hover { background: #1a252f !important; }
+
+    .book-slot-btn { padding: 8px 16px; background-color: #27ae60 !important; color: #fff; border: none; cursor: pointer; margin-top: 10px; border-radius: 4px; font-weight: bold; width: 100%; transition: background 0.2s; }
+    .book-slot-btn:hover { background-color: #219150 !important; }
+
+    /* --- DYNAMIC EQUIPMENT & SLOT STYLES (Injected by book.js) --- */
+    .book { background: #fdfdfd; border: 1px solid #e0e0e0 !important; border-radius: 8px !important; padding: 20px !important; margin-top: 20px; }
+    .book h3 { border: none; padding-bottom: 5px; margin-bottom: 5px; color: #2980b9; }
+    
+    /* Display slots as a beautiful Grid instead of a vertical list */
+    .slots-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 20px !important; }
+    .slot { margin: 0 !important; padding: 15px !important; border: 1px solid #ddd !important; border-radius: 6px !important; background-color: #fff !important; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
+    .slot p { margin: 5px 0; font-size: 14px; color: #444; }
+    .slot strong { color: #2c3e50; }
+    
+    /* Inputs inside the dynamic forms */
+    input[type="text"], input[type="number"], textarea { border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus { outline: none; border-color: #3498db; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="logo">CIF STUDENT PORTAL</div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <h3 class="current-user" style="margin: 0; font-size: 16px; font-weight: 500;">User: ...</h3>
+      <button onclick="openProfileModal()" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+        Profile
+      </button>
+      <button onclick="logout()" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+        Logout
+      </button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header">
+      <h2>Book Your Equipment</h2>
+      <p>Follow the 2 steps below to secure your experiment slot.</p>
+    </div>
+
+    <!-- Step 1: Project Selection -->
+    <div class="card" style="border-top: 4px solid #2980b9;">
+      <h3>1. Select Your Approved Project</h3>
+      <p style="margin-top: -10px; margin-bottom: 15px; font-size: 0.9rem;">You must select a project funding source before you can book slots.</p>
       
-      .book-slot-btn { padding: 8px 16px; background-color: #28a745; color: #fff; border: none; cursor: pointer; margin-top: 10px; border-radius: 4px; }
-      .book-slot-btn:hover { background-color: #218838; }
-    </style>
-  </head>
-  <body>
-    <nav class="navbar">
-      <div class="logo">CIF</div>
-      <div class="user-menu">
-        <h3 class="current-user">User:</h3>
-        <div class="dropdown-content">
-          <button onclick="openProfileModal()">Profile</button>
-          <button onclick="logout()">Logout</button>
+      <div id="projectListContainer">
+        <div class="table-container">
+          <table id="projectTable">
+            <thead>
+              <tr>
+                <th>Project ID</th>
+                <th>Title</th>
+                <th>Supervisor</th>
+                <th style="width: 100px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="4" style="text-align: center; color: #777;">Loading your projects...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </nav>
-
-    <div class="content">
-      <h1>Book Your Slot</h1>
-      <p>Book your equipments</p>
     </div>
-
-    <div id="projectListContainer">
-      <h3>1. Select Your Project</h3>
-      <div id="projectTable">
-        <p>Loading your projects...</p>
+    
+    <!-- Step 2: Slot Selection -->
+    <div class="card" style="border-top: 4px solid #27ae60;">
+      <h3>2. Configure & Find Available Slots</h3>
+      <p style="margin-top: -10px; margin-bottom: 15px; font-size: 0.9rem;">Fill out any required equipment details, then choose your preferred time.</p>
+      
+      <div id="books">
+        <p style="color: #777; font-style: italic;">Loading equipment data...</p>
       </div>
     </div>
-    
-    <div class="content" style="margin: 20px 20px 0 20px;">
-        <h3>2. Find an Available Slot</h3>
-    </div>
-    
-    <div id="books"></div>
-  </body>
+
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const token = getCookie();
+      const token = getCookie("session_token") || getCookie();
       if (!token) {
         window.location.href = "login.html";
         return;
       }
       show_current_user();
       fetchAndDisplayProjects();
-      trackRequest(); // ADD THIS LINE - This fetches and displays the equipment slots
-
+      
+      // Fetches and displays the equipment slots based on URL param
+      trackRequest(); 
     });
   </script>
+</body>
 </html>
