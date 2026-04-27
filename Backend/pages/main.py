@@ -14,7 +14,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         return
 
 # Create a TCP server
-with socketserver.TCPServer(("", port), CustomHandler) as httpd:
+with socketserver.TCPServer(("0.0.0.0", port), CustomHandler) as httpd:
     print("Serving at port", port)
     # Serve indefinitely
     httpd.serve_forever()

@@ -141,6 +141,8 @@
   </div>
 
   <script>
+    host='10.128.13.76'
+
     document.addEventListener("DOMContentLoaded", function () {
       const token = getCookie("session_token"); // or getCookie() depending on your script
       if (!token) {
@@ -173,7 +175,7 @@
     }
     function decideStaff(id, decision) {
         const token = getCookie();
-        fetch("http://localhost:8000/decide_by_staff_incharge", {
+        fetch("http://" + host + ":8000/decide_by_staff_incharge", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token, request_id: id, decision }),
@@ -196,7 +198,7 @@
         resDiv.style.color = "black";
 
         try {
-            const response = await fetch("http://localhost:8000/manual_deduct_funds", {
+            const response = await fetch("http://" + host + ":8000/manual_deduct_funds", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token, project_id: pid, amount: parseInt(amt), reason }),
@@ -220,7 +222,7 @@
     async function loadStaffEquipment() {
         const token = getCookie();
         try {
-            const res = await fetch("http://localhost:8000/staff/my_equipment", {
+            const res = await fetch("http://" + host + ":8000/staff/my_equipment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token })
@@ -252,7 +254,7 @@
         container.innerHTML = "<p style='width:100%; text-align:center;'>Loading slots...</p>";
         
         try {
-            const res = await fetch("http://localhost:8000/staff/equipment_slots", {
+            const res = await fetch("http://" + host + ":8000/staff/equipment_slots", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token: token, ID: equipId }) 

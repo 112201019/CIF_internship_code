@@ -1,4 +1,6 @@
 // FIXED: Returns the VALUE of the first cookie found
+host='10.128.13.76'
+
 function getCookie() {
   var cookies = document.cookie.split(";");
   for (var i = 0; i < cookies.length; i++) {
@@ -43,7 +45,7 @@ async function showSection(section) {
             return;
         }
 
-        const response = await fetch(`http://localhost:8000/show_all_${section}`, {
+        const response = await fetch(`http://${host}:8000/show_all_${section}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -208,7 +210,7 @@ async function search() {
 
     try {
         const token = getCookie();
-        const response = await fetch('http://localhost:8000/admin/search', {
+        const response = await fetch('http://'+host+':8000/admin/search', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -269,7 +271,7 @@ async function logout() {
     console.log("no active session");
     return;
   }
-  const response = await fetch("http://localhost:8000/logout", {
+  const response = await fetch("http://" + host + ":8000/logout", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -421,7 +423,7 @@ async function handleAdd(event, section) {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/admin/create_user', {
+        const response = await fetch('http://'+host+':8000/admin/create_user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody)
@@ -519,7 +521,7 @@ async function handleEdit(event, section, id) {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/admin/update_user', {
+        const response = await fetch('http://'+host+':8000/admin/update_user', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -579,7 +581,7 @@ async function deleteItem(section, id) {
 
     const token = getCookie()
     try {
-        const response = await fetch('http://localhost:8000/admin/delete_user', {
+        const response = await fetch('http://'+host+':8000/admin/delete_user', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -607,7 +609,7 @@ async function showProjectApprovals() {
     const token = getCookie();
     const contentArea = document.getElementById('contentArea');
     try {
-        const response = await fetch('http://localhost:8000/admin/pending_projects', {
+        const response = await fetch('http://'+host+':8000/admin/pending_projects', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token })
@@ -669,7 +671,7 @@ async function handleApproval(event, projectId) {
     const expiry_date = document.getElementById('expiry_date').value;
 
     try {
-        const response = await fetch('http://localhost:8000/admin/approve_project', {
+        const response = await fetch('http://'+host+':8000/admin/approve_project', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -703,7 +705,7 @@ async function handleRejection(projectId) {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/admin/reject_project', {
+        const response = await fetch('http://'+host+':8000/admin/reject_project', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -786,7 +788,7 @@ async function showReportsSection() {
     
     const token = getCookie();
     try {
-        const response = await fetch("http://localhost:8000/show_all_faculty", {
+        const response = await fetch("http://" + host + ":8000/show_all_faculty", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token })
@@ -840,7 +842,7 @@ async function handleReportExport(event) {
     const end_date = document.getElementById("report_end_date").value;
 
     try {
-        const response = await fetch("http://localhost:8000/admin/export_report", {
+        const response = await fetch("http://" + host + ":8000/admin/export_report", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token, faculty_id, start_date, end_date })

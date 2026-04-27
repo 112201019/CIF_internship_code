@@ -1,3 +1,5 @@
+host='10.128.13.76'
+
 function setCookie(name, value, days = 1) {
   var expires = "";
   if (days) {
@@ -68,7 +70,7 @@ document
 
         // --- NEW REDIRECT LOGIC ---
         // Check the role *immediately* to decide where to go
-        const roleResponse = await fetch("http://localhost:8000/is_member_of", {
+        const roleResponse = await fetch("http://" + host + ":8000/is_member_of", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: response.Token }),
@@ -99,7 +101,7 @@ document
   });
 
 async function login(username, password) {
-  const response = await fetch("http://localhost:8000/login", {
+  const response = await fetch("http://" + host + ":8000/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -115,7 +117,7 @@ async function logout() {
     console.log("no active session");
     return;
   }
-  const response = await fetch("http://localhost:8000/logout", {
+  const response = await fetch("http://" + host + ":8000/logout", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -131,7 +133,7 @@ async function logout() {
 
 async function show_current_user() {
   const token = getCookie();
-  const response = await fetch("http://localhost:8000/current_user", {
+  const response = await fetch("http://" + host + ":8000/current_user", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -150,7 +152,7 @@ async function fetchAndDisplayEquipments() {
   try {
     const token = getCookie("session_token"); // Use corrected cookie function
     const response = await fetch(
-      "http://localhost:8000/show_all_equipments",
+      "http://"+host+":8000/show_all_equipments",
       {
         method: "POST",
         headers: {
@@ -228,7 +230,7 @@ function trackRequest() {
   };
 
   // Fetch data from the server
-  fetch("http://localhost:8000/check_status", {
+  fetch("http://" + host + ":8000/check_status", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -267,7 +269,7 @@ function showPendingRequestsSuper() {
     token: token,
   };
 
-  fetch("http://localhost:8000/show_requests_supervisor", {
+  fetch("http://" + host + ":8000/show_requests_supervisor", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -405,7 +407,7 @@ function approveRequest(requestId, btn) {
   btn.disabled = true;
 
   const token = getCookie();
-  fetch("http://localhost:8000/decide_by_super_visor", {
+  fetch("http://" + host + ":8000/decide_by_super_visor", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
@@ -431,7 +433,7 @@ function rejectRequest(requestId, btn) {
   btn.disabled = true;
 
   const token = getCookie();
-  fetch("http://localhost:8000/decide_by_super_visor", {
+  fetch("http://" + host + ":8000/decide_by_super_visor", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
@@ -456,7 +458,7 @@ function showPendingRequestsIn() {
     token: token,
   };
 
-  fetch("http://localhost:8000/show_requests_faculty_incharge", {
+  fetch("http://" + host + ":8000/show_requests_faculty_incharge", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -592,7 +594,7 @@ function approveRequestIN(requestId, btn) {
   btn.disabled = true;
 
   const token = getCookie();
-  fetch("http://localhost:8000/decide_by_faculty_incharge", {
+  fetch("http://" + host + ":8000/decide_by_faculty_incharge", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
@@ -618,7 +620,7 @@ function rejectRequestIN(requestId, btn) {
   btn.disabled = true;
 
   const token = getCookie();
-  fetch("http://localhost:8000/decide_by_faculty_incharge", {
+  fetch("http://" + host + ":8000/decide_by_faculty_incharge", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
@@ -643,7 +645,7 @@ function showPendingRequestsStaff() {
     token: token,
   };
 
-  fetch("http://localhost:8000/show_requests_staff_incharge", {
+  fetch("http://" + host + ":8000/show_requests_staff_incharge", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -779,7 +781,7 @@ function approveRequestStaff(requestId, btn) {
   btn.disabled = true;
 
   const token = getCookie();
-  fetch("http://localhost:8000/decide_by_staff_incharge", {
+  fetch("http://" + host + ":8000/decide_by_staff_incharge", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
@@ -805,7 +807,7 @@ function rejectRequestStaff(requestId, btn) {
   btn.disabled = true;
 
   const token = getCookie();
-  fetch("http://localhost:8000/decide_by_staff_incharge", {
+  fetch("http://" + host + ":8000/decide_by_staff_incharge", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
@@ -830,7 +832,7 @@ async function showRequestsAll() {
   if(!token) return;
 
   try {
-    const response = await fetch("http://localhost:8000/show_requests_student", {
+    const response = await fetch("http://" + host + ":8000/show_requests_student", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: token }),
@@ -880,7 +882,7 @@ async function checkUser() {
   //   const message = data.message;
   //   console.log(message);
   try {
-    const response = await fetch("http://localhost:8000/is_member_of", {
+    const response = await fetch("http://" + host + ":8000/is_member_of", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -947,7 +949,7 @@ async function handleAddSlot(event) {
 
   // 5. Send the data to your FastAPI endpoint
   try {
-    const response = await fetch("http://localhost:8000/insert_slot_staff_incharge", {
+    const response = await fetch("http://" + host + ":8000/insert_slot_staff_incharge", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1005,7 +1007,7 @@ async function handleAddSlot(event) {
 //     };
 
 //     // Call the updated API endpoint
-//     const response = await fetch("http://localhost:8000/add_project", {
+//     const response = await fetch("http://" + host + ":8000/add_project", {
 //       method: "POST",
 //       headers: { "Content-Type": "application/json" },
 //       body: JSON.stringify(projectData),
@@ -1049,7 +1051,7 @@ async function showMyProjects() {
   }
 
   try {
-    const response = await fetch("http://localhost:8000/faculty/my_projects", {
+    const response = await fetch("http://" + host + ":8000/faculty/my_projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -1123,7 +1125,7 @@ async function openProjectModal() {
   if (!token) return;
 
   try {
-    const response = await fetch("http://localhost:8000/departments", {
+    const response = await fetch("http://" + host + ":8000/departments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -1169,7 +1171,7 @@ async function updateProjectId() {
 
   // 1. Fetch the current user ID from the server
   try {
-    const response = await fetch("http://localhost:8000/current_user", {
+    const response = await fetch("http://" + host + ":8000/current_user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -1249,7 +1251,7 @@ async function addNewProject(event) {
   }
 
   try {
-    const checkResponse = await fetch("http://localhost:8000/project_exists", {
+    const checkResponse = await fetch("http://" + host + ":8000/project_exists", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, project_id: projectId }),
@@ -1262,7 +1264,7 @@ async function addNewProject(event) {
       return;
     }
 
-    const addResponse = await fetch("http://localhost:8000/add_project", {
+    const addResponse = await fetch("http://" + host + ":8000/add_project", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, project_id: projectId, project_title: projectTitle, project_type: projectType }),
@@ -1289,7 +1291,7 @@ async function loadOngoingExperiments() {
   if (!token) return;
 
   try {
-    const res = await fetch("http://localhost:8000/get_ongoing_experiments", {
+    const res = await fetch("http://" + host + ":8000/get_ongoing_experiments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: token }),
@@ -1358,7 +1360,7 @@ async function finalizeAndBill(reqId, projId) {
   const reason = document.getElementById(`extra_reason_${reqId}`).value;
 
   try {
-    const response = await fetch("http://localhost:8000/finalize_experiment", {
+    const response = await fetch("http://" + host + ":8000/finalize_experiment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
@@ -1386,7 +1388,7 @@ async function cancelOngoingExperiment(reqId) {
 
   const token = getCookie();
   try {
-    const response = await fetch("http://localhost:8000/cancel_experiment", {
+    const response = await fetch("http://" + host + ":8000/cancel_experiment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
@@ -1414,7 +1416,7 @@ async function openProfileModal() {
     const token = getCookie();
     
     // Fetch profile data
-    const res = await fetch("http://localhost:8000/get_profile", {
+    const res = await fetch("http://" + host + ":8000/get_profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token })
@@ -1477,7 +1479,7 @@ async function handleProfileUpdate(e) {
     const password = document.getElementById("prof_pwd").value;
 
     try {
-        const res = await fetch("http://localhost:8000/update_profile", {
+        const res = await fetch("http://" + host + ":8000/update_profile", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token, mail_id, password })

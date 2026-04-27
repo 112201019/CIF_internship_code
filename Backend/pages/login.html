@@ -37,12 +37,14 @@
     <script src="admin.js"></script>
     <script src="script.js"></script>
     <script>
+        host='10.128.13.76'
+
         document.addEventListener('DOMContentLoaded', async function () {
         const token = getCookie();
         if (token) {
             // Fetch role and redirect correctly instead of just sending to main.html
             try {
-                const response = await fetch("http://localhost:8000/is_member_of", {
+                const response = await fetch("http://" + host + ":8000/is_member_of", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ token }),

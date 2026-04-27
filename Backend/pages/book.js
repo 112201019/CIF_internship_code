@@ -1,4 +1,5 @@
 let selectedProjectID = null; 
+host='10.128.13.76'
 
 // --- COOKIE & HELPER FUNCTIONS ---
 function setCookie(name, value, days = 1) {
@@ -50,7 +51,7 @@ async function fetchAndDisplayProjects() {
   if (!token) return;
 
   try {
-    const response = await fetch("http://localhost:8000/show_projects_approved", {
+    const response = await fetch("http://" + host + ":8000/show_projects_approved", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -95,7 +96,7 @@ function selectProject(projectID) {
 // --- NEW: FETCH REQUIREMENTS & QUESTIONS ---
 async function fetchRequirements(token, equipmentId) {
     try {
-        const response = await fetch("http://localhost:8000/get_equipment_requirements", {
+        const response = await fetch("http://" + host + ":8000/get_equipment_requirements", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: token, ID: equipmentId })
@@ -122,7 +123,7 @@ function trackRequest() {
 
   const requestData = { token: token, name: equipmentName };
 
-  fetch("http://localhost:8000/get_ids_by_equipment_name", {
+  fetch("http://" + host + ":8000/get_ids_by_equipment_name", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(requestData),
@@ -205,7 +206,7 @@ function trackRequest() {
 
           // 2. Fetch Slots
           const slotRequest = { token: token, ID: element.equipment_id };
-          fetch("http://localhost:8000/show_available_slots_equipment", {
+          fetch("http://" + host + ":8000/show_available_slots_equipment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(slotRequest),
@@ -289,7 +290,7 @@ function trackRequest() {
 
                   console.log("Booking Payload:", payload);
                   
-                  fetch("http://localhost:8000/request_multiple_slots", {
+                  fetch("http://" + host + ":8000/request_multiple_slots", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(payload),
