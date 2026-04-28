@@ -177,6 +177,7 @@
             <button class="menu-btn" data-section="faculty" onclick="switchSection(this)">Manage Faculty</button>
             <button class="menu-btn" data-section="staff" onclick="switchSection(this)">Manage Staff</button>
             <button class="menu-btn" data-section="equipment" onclick="switchSection(this)">Manage Equipment</button>
+            <button class="menu-btn" data-section="department" onclick="switchSection(this)">Manage Departments</button>
             <button class="menu-btn" data-section="reports" onclick="switchSection(this)">Export Reports</button>
             <hr class="divider">
             <button class="menu-btn" data-section="project_approval" onclick="switchSection(this)">Project Approvals</button>
@@ -196,7 +197,6 @@
             </div>
         </main>
     </div>
-    
     <script>
         // Initialize: Check login and load default section
         window.addEventListener("load", () => {
@@ -210,6 +210,25 @@
                     console.log('Initializing with student section');
                     switchSection(defaultBtn);
                 }
+            }
+        });
+
+        // --- MODAL CONTROL LOGIC ---
+        function openDeptModal() {
+            document.getElementById("addDeptModal").style.display = "block";
+            document.getElementById("addDeptResult").textContent = ""; // Clear old messages
+        }
+
+        function closeDeptModal() {
+            document.getElementById("addDeptModal").style.display = "none";
+            document.getElementById("addDeptForm").reset(); // Clear inputs
+        }
+
+        // Close modal if user clicks outside the white box
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById("addDeptModal");
+            if (event.target === modal) {
+                closeDeptModal();
             }
         });
     </script>

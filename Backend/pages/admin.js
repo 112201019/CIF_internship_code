@@ -1,5 +1,5 @@
 // FIXED: Returns the VALUE of the first cookie found
-host='10.128.13.76'
+host='localhost'
 
 function getCookie() {
   var cookies = document.cookie.split(";");
@@ -28,6 +28,13 @@ function switchSection(button) {
     if (section === 'project_approval') {
         if (toolbar) toolbar.style.display = 'none';
         showProjectApprovals();
+    } 
+    else if (section === 'fund_requests') {
+        if (toolbar) toolbar.style.display = 'none';
+        showFundRequests();
+    }
+    else if (section === 'department') {
+        loadDepartmentsView();
     } else if (section === 'reports') {
         if (toolbar) toolbar.style.display = 'none';
         showReportsSection();
@@ -446,23 +453,26 @@ async function editItem(section, item) {
     const contentArea = document.getElementById('contentArea');
     const fields = {
         student: [
+            {id: 'student_id', label: 'Student ID', readonly: true}, // <-- ADDED THIS
             {id: 'student_name', label: 'Name'},
             {id: 'super_visor_id', label: 'Supervisor ID'},
             {id: 'mail_id', label: 'Mail ID'},
             {id: 'department', label: 'Department'},
-            {id: 'password', label: 'Password', type: 'password'}
+            {id: 'password', label: 'Password', type: 'password', readonly: true}
         ],
         faculty: [
+            {id: 'faculty_id', label: 'Faculty ID', readonly: true}, // <-- ADDED THIS
             {id: 'faculty_name', label: 'Name'},
             {id: 'mail_id', label: 'Mail ID'},
             {id: 'department', label: 'Department'},
-            {id: 'password', label: 'Password', type: 'password'}
+            {id: 'password', label: 'Password', type: 'password', readonly: true}
         ],
         staff: [
+            {id: 'staff_id', label: 'Staff ID', readonly: true}, // <-- ADDED THIS
             {id: 'staff_name', label: 'Name'},
             {id: 'mail_id', label: 'Mail ID'},
             {id: 'department', label: 'Department'},
-            {id: 'password', label: 'Password', type: 'password'}
+            {id: 'password', label: 'Password', type: 'password', readonly: true}
         ],
         equipment: [
             {id: 'equipment_name', label: 'Name'},
@@ -480,15 +490,24 @@ async function editItem(section, item) {
     `;
 
     fields[section].forEach(field => {
+        // Apply styling if readonly
+        const isReadonly = field.readonly ? 'readonly' : '';
+        const style = field.readonly ? 'background-color: #e9ecef; cursor: not-allowed; color: #6c757d; border: 1px solid #ccc;' : '';
+        
+        // Remove 'name' attribute from readonly fields so they are NOT submitted in formData
+        const nameAttr = field.readonly ? '' : `name="${field.id}"`;
+        
+        // Obfuscate password visually
+        const value = (field.type === 'password' && field.readonly) ? '********' : (item[field.id] || '');
+        // -----------------------------
+
         html += `
             <div class="form-group">
                 <label for="${field.id}">${field.label}:</label>
                 <input 
                     type="${field.type || 'text'}" 
                     id="${field.id}" 
-                    name="${field.id}"
-                    value="${item[field.id] || ''}"
-                >
+                    ${nameAttr}        value="${value}"   ${isReadonly}      style="${style}"   >
             </div>
         `;
     });
@@ -899,5 +918,163 @@ async function handleReportExport(event) {
     } catch (err) {
         msgDiv.textContent = "Error: " + err.message;
         msgDiv.style.color = "red";
+    }
+}
+
+async function handleAddDepartment(event) {
+    event.preventDefault();
+    
+    // Use your existing cookie function
+    const token = getCookie("session_token") || getCookie(); 
+    const deptId = document.getElementById("new_dept_id").value.trim().toUpperCase();
+    const deptName = document.getElementById("new_dept_name").value.trim();
+    const resultDiv = document.getElementById("addDeptResult");
+
+    resultDiv.textContent = "Adding...";
+    resultDiv.style.color = "black";
+
+    try {
+        const response = await fetch("http://" + host + ":8000/admin/add_department", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                token: token, 
+                department_id: deptId, 
+                department_name: deptName 
+            })
+        });
+
+        const data = await response.json();
+        resultDiv.textContent = data.message;
+
+        if (data.message.includes("successfully")) {
+            resultDiv.style.color = "green";
+            event.target.reset(); // Clear the form
+        } else {
+            resultDiv.style.color = "red";
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        resultDiv.textContent = "Network error. Could not connect to the server.";
+        resultDiv.style.color = "red";
+    }
+}
+// --- MANAGE DEPARTMENTS VIEW ---
+async function loadDepartmentsView() {
+    const contentArea = document.getElementById("contentArea");
+    
+    // 1. Build the UI Layout (Table on top, Add Form on bottom)
+    contentArea.innerHTML = `
+        <div style="display: flex; gap: 20px; flex-direction: column;">
+            
+            <div style="background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 20px;">
+                <h2 style="margin-bottom: 15px; color: #2c3e50;">Current Departments</h2>
+                <table class="data-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Department ID</th>
+                            <th>Department Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deptTableBody">
+                        <tr><td colspan="2" style="text-align:center; padding:20px;">Loading departments...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-container" style="margin: 0; max-width: 100%; border-top: 4px solid #8e44ad;">
+                <h3>Add New Department</h3>
+                <p style="color:#666; font-size: 14px; margin-bottom: 15px;">Register a new academic or administrative department.</p>
+                
+                <form id="addDeptForm" onsubmit="handleAddDepartmentInline(event)" style="display: flex; gap: 15px; align-items: flex-end;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Department ID</label>
+                        <input type="text" id="new_dept_id" required placeholder="e.g., CSE">
+                    </div>
+                    <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                        <label>Department Name</label>
+                        <input type="text" id="new_dept_name" required placeholder="e.g. Computer Science">
+                    </div>
+                    <button type="submit" style="background:#8e44ad; color:white; padding:10px 25px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; height: 40px;">
+                        Add
+                    </button>
+                </form>
+                <div id="addDeptResult" style="margin-top: 10px; font-weight:bold; font-size:0.9rem;"></div>
+            </div>
+            
+        </div>
+    `;
+
+    // 2. Fetch the data from the server
+    const token = getCookie("session_token") || getCookie();
+    try {
+        // Using the existing /departments endpoint you already use for the Faculty project modal
+        const response = await fetch("http://" + host + ":8000/departments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token })
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById("deptTableBody");
+        tbody.innerHTML = ""; // Clear loading message
+        
+        if(data.message && data.message.length > 0) {
+            data.message.forEach(dept => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${dept.department_id}</strong></td>
+                        <td>${dept.department_name}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="2" class="no-data">No departments found.</td></tr>`;
+        }
+    } catch (error) {
+        document.getElementById("deptTableBody").innerHTML = `<tr><td colspan="2" class="error-message">Error connecting to server.</td></tr>`;
+    }
+}
+
+async function handleAddDepartmentInline(event) {
+    event.preventDefault();
+    
+    const token = getCookie("session_token") || getCookie(); 
+    const deptId = document.getElementById("new_dept_id").value.trim().toUpperCase();
+    const deptName = document.getElementById("new_dept_name").value.trim();
+    const resultDiv = document.getElementById("addDeptResult");
+    const btn = event.target.querySelector('button');
+
+    btn.innerHTML = "Adding...";
+    btn.disabled = true;
+    resultDiv.textContent = "";
+
+    try {
+        const response = await fetch("http://" + host + ":8000/admin/add_department", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token, department_id: deptId, department_name: deptName })
+        });
+
+        const data = await response.json();
+
+        if (data.message.includes("successfully")) {
+            resultDiv.style.color = "green";
+            resultDiv.textContent = data.message;
+            event.target.reset(); // Clear the inputs
+            
+            // MAGIC TRICK: Refresh the view instantly so the new department appears in the table!
+            loadDepartmentsView(); 
+            
+        } else {
+            resultDiv.style.color = "red";
+            resultDiv.textContent = data.message;
+        }
+    } catch (error) {
+        resultDiv.style.color = "red";
+        resultDiv.textContent = "Network error. Could not connect to the server.";
+    } finally {
+        btn.innerHTML = "Add";
+        btn.disabled = false;
     }
 }

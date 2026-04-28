@@ -1,4 +1,4 @@
-host='10.128.13.76'
+host='localhost'
 
 function setCookie(name, value, days = 1) {
   var expires = "";
@@ -312,6 +312,20 @@ function showPendingRequestsSuper() {
         // -------------------------------------
         // const requestDataPara = document.createElement("p");
         // requestDataPara.textContent = `Request Data: ${request.request_data}`;
+        // --- NEW CODE: Add Student Info Display ---
+        const userInfoDiv = document.createElement("div");
+        userInfoDiv.style = "background: #eef2f5; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05);";
+        userInfoDiv.innerHTML = `
+            <span style="display:block; margin-bottom:4px; font-size: 1.05em; color: #2c3e50;">
+                <svg style="width:16px; height:16px; vertical-align:middle; margin-right:5px; margin-top:-2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                <strong>Requester:</strong> ${request.student_name} (${request.student_id})
+            </span>
+            <span style="display:block; font-size: 0.9em; color: #555;">
+                <strong>Dept:</strong> ${request.department} &nbsp;|&nbsp; <strong>Email:</strong> <a href="mailto:${request.mail_id}" style="color:#3498db; text-decoration:none;">${request.mail_id}</a>
+            </span>
+        `;
+        requestDiv.appendChild(userInfoDiv);
+        // ------------------------------------------
         requestDiv.appendChild(requestIdPara);
         requestDiv.appendChild(equipmentIdPara);
         requestDiv.appendChild(slotIdPara);
@@ -500,6 +514,20 @@ function showPendingRequestsIn() {
         // -------------------------------------
         // const requestDataPara = document.createElement("p");
         // requestDataPara.textContent = `Request Data: ${request.request_data}`;
+        // --- NEW CODE: Add Student Info Display ---
+        const userInfoDiv = document.createElement("div");
+        userInfoDiv.style = "background: #eef2f5; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05);";
+        userInfoDiv.innerHTML = `
+            <span style="display:block; margin-bottom:4px; font-size: 1.05em; color: #2c3e50;">
+                <svg style="width:16px; height:16px; vertical-align:middle; margin-right:5px; margin-top:-2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                <strong>Requester:</strong> ${request.student_name} (${request.student_id})
+            </span>
+            <span style="display:block; font-size: 0.9em; color: #555;">
+                <strong>Dept:</strong> ${request.department} &nbsp;|&nbsp; <strong>Email:</strong> <a href="mailto:${request.mail_id}" style="color:#3498db; text-decoration:none;">${request.mail_id}</a>
+            </span>
+        `;
+        requestDiv.appendChild(userInfoDiv);
+        // ------------------------------------------
         requestDiv.appendChild(requestIdPara);
         requestDiv.appendChild(equipmentIdPara);
         requestDiv.appendChild(slotIdPara);
@@ -688,6 +716,20 @@ function showPendingRequestsStaff() {
         // -------------------------------------
         // const requestDataPara = document.createElement("p");
         // requestDataPara.textContent = `Request Data: ${request.request_data}`;
+        // --- NEW CODE: Add Student Info Display ---
+        const userInfoDiv = document.createElement("div");
+        userInfoDiv.style = "background: #eef2f5; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05);";
+        userInfoDiv.innerHTML = `
+            <span style="display:block; margin-bottom:4px; font-size: 1.05em; color: #2c3e50;">
+                <svg style="width:16px; height:16px; vertical-align:middle; margin-right:5px; margin-top:-2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                <strong>Requester:</strong> ${request.student_name} (${request.student_id})
+            </span>
+            <span style="display:block; font-size: 0.9em; color: #555;">
+                <strong>Dept:</strong> ${request.department} &nbsp;|&nbsp; <strong>Email:</strong> <a href="mailto:${request.mail_id}" style="color:#3498db; text-decoration:none;">${request.mail_id}</a>
+            </span>
+        `;
+        requestDiv.appendChild(userInfoDiv);
+        // ------------------------------------------
         requestDiv.appendChild(requestIdPara);
         requestDiv.appendChild(equipmentIdPara);
         requestDiv.appendChild(slotIdPara);
@@ -826,9 +868,8 @@ function rejectRequestStaff(requestId, btn) {
     });
 }
 // Show all requests of the current user
-// Show all requests of the current user
 async function showRequestsAll() {
-  const token = getCookie("cif_token");
+  const token = getCookie("session_token"); // Ensure cookie name matches your setup
   if(!token) return;
 
   try {
@@ -846,14 +887,21 @@ async function showRequestsAll() {
           const requestDiv = document.createElement("div");
           requestDiv.classList.add("request-item");
           
-          // Use the formatter here
           const formattedTime = formatSlotTime(request.slot_time);
+          
+          // Color code the status
+          let statusColor = "#f39c12"; // pending
+          if(request.status === 'approved') statusColor = "#27ae60";
+          if(request.status === 'rejected') statusColor = "#c0392b";
 
           requestDiv.innerHTML = `
-            <p><strong>Request ID:</strong> ${request.request_id}</p>
-            <p><strong>Equipment ID:</strong> ${request.equipment_id}</p>
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <p style="margin-top:0;"><strong>Request ID:</strong> ${request.request_id}</p>
+                <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:12px; font-size:0.8em; font-weight:bold; text-transform:uppercase;">${request.status || 'Pending'}</span>
+            </div>
+            <p><strong>Equipment:</strong> ${request.equipment_name.toUpperCase()}</p>
             <p><strong>Time:</strong> ${formattedTime}</p>
-            <p style="font-size:0.9em; color:#666;">Project: ${request.proj_id}</p>
+            <p style="font-size:0.9em; color:#666; margin-bottom:0;">Project: ${request.proj_id}</p>
           `;
           container.appendChild(requestDiv);
         });
@@ -929,6 +977,13 @@ async function handleAddSlot(event) {
   const startTime = document.getElementById("startTime").value;
   const endTime = document.getElementById("endTime").value;
 
+  // --- NEW: Failsafe Validation Check ---
+  if (!equipmentId || !startTime || !endTime) {
+    responseDiv.textContent = "Error: Please fill out all fields.";
+    responseDiv.style.color = "red";
+    return;
+  }
+
   // 3. IMPORTANT: We use your existing getCookie() function
   const token = getCookie();
 
@@ -964,7 +1019,7 @@ async function handleAddSlot(event) {
       responseDiv.textContent = result.message;
       responseDiv.style.color = "green";
       // We can access the form via the button's event object to reset it
-      event.target.form.reset();
+      event.target.reset();
     } else {
       // Error! Display the error message
       responseDiv.textContent = `Failed: ${result.message}`;

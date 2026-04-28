@@ -2,7 +2,7 @@ import sqlalchemy
 import json
 # Database Utility Class
 from sqlalchemy.engine import create_engine
-
+from urllib.parse import quote_plus  # <-- ADD THIS IMPORT
 # Provides executable SQL expression construct
 from sqlalchemy.sql import text
 
@@ -29,13 +29,26 @@ class PostgresqlDB:
         # print(user_name, password, host, port, db_name)
         self.execute_dql_commands("select current_user")
 
+    # def create_db_engine(self):
+    #     """
+    #     Method to establish a connection to the database, will return an instance of Engine
+    #     which can used to communicate with the database
+    #     """
+    #     try:
+    #         db_uri = f"postgresql+psycopg2://{self.user_name}:{self.password}@{self.host}:{self.port}/{self.db_name}"
+    #         return create_engine(db_uri)
+    #     except Exception as err:
+    #         raise RuntimeError(f"Failed to establish connection -- {err}") from err
     def create_db_engine(self):
         """
         Method to establish a connection to the database, will return an instance of Engine
         which can used to communicate with the database
         """
         try:
-            db_uri = f"postgresql+psycopg2://{self.user_name}:{self.password}@{self.host}:{self.port}/{self.db_name}"
+            # Encode the password to safely handle special characters
+            safe_password = quote_plus(self.password)
+            
+            db_uri = f"postgresql+psycopg2://{self.user_name}:{safe_password}@{self.host}:{self.port}/{self.db_name}"
             return create_engine(db_uri)
         except Exception as err:
             raise RuntimeError(f"Failed to establish connection -- {err}") from err
@@ -210,24 +223,74 @@ def decide_by_staff_incharge(db: PostgresqlDB, request_id: int, decision: str):
     db.execute_ddl_and_dml_commands(query)
 
 
+# def show_requests_supervisor(db: PostgresqlDB):
+#     query = "select * from show_requests_supervisor()"
+#     r = list(db.execute_dql_commands(query))
+#     result = []
+#     fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
+#     for i in r:
+#         record = {}
+#         for j in range(len(i)):
+#             record[fields[j]] = i[j]
+#         result.append(record)
+#     return result
+
+
+# def show_requests_faculty_incharge(db: PostgresqlDB):
+#     query = "select * from show_requests_faculty_incharge()"
+#     r = list(db.execute_dql_commands(query))
+#     result = []
+#     fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
+#     for i in r:
+#         record = {}
+#         for j in range(len(i)):
+#             record[fields[j]] = i[j]
+#         result.append(record)
+#     return result
+
+
+# def show_requests_staff_incharge(db: PostgresqlDB):
+#     query = "select * from show_requests_staff_incharge()"
+#     r = list(db.execute_dql_commands(query))
+#     result = []
+#     fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
+#     for i in r:
+#         record = {}
+#         for j in range(len(i)):
+#             record[fields[j]] = i[j]
+#         result.append(record)
+#     return result
 def show_requests_supervisor(db: PostgresqlDB):
-    query = "select * from show_requests_supervisor()"
+    query = """
+        SELECT sr.request_id, sr.equipment_name, sr.slot_time, sr.slot_id, 
+               sr.request_data, sr.slot_count, sr.unit_time, sr.comment,
+               r.student_id, s.student_name, s.department, s.mail_id
+        FROM show_requests_supervisor() sr
+        JOIN request r ON sr.request_id = r.request_id
+        JOIN student s ON r.student_id = s.student_id
+    """
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment", "student_id", "student_name", "department", "mail_id"]
     for i in r:
         record = {}
         for j in range(len(i)):
             record[fields[j]] = i[j]
         result.append(record)
     return result
-
 
 def show_requests_faculty_incharge(db: PostgresqlDB):
-    query = "select * from show_requests_faculty_incharge()"
+    query = """
+        SELECT sr.request_id, sr.equipment_name, sr.slot_time, sr.slot_id, 
+               sr.request_data, sr.slot_count, sr.unit_time, sr.comment,
+               r.student_id, s.student_name, s.department, s.mail_id
+        FROM show_requests_faculty_incharge() sr
+        JOIN request r ON sr.request_id = r.request_id
+        JOIN student s ON r.student_id = s.student_id
+    """
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment", "student_id", "student_name", "department", "mail_id"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -235,12 +298,18 @@ def show_requests_faculty_incharge(db: PostgresqlDB):
         result.append(record)
     return result
 
-
 def show_requests_staff_incharge(db: PostgresqlDB):
-    query = "select * from show_requests_staff_incharge()"
+    query = """
+        SELECT sr.request_id, sr.equipment_name, sr.slot_time, sr.slot_id, 
+               sr.request_data, sr.slot_count, sr.unit_time, sr.comment,
+               r.student_id, s.student_name, s.department, s.mail_id
+        FROM show_requests_staff_incharge() sr
+        JOIN request r ON sr.request_id = r.request_id
+        JOIN student s ON r.student_id = s.student_id
+    """
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment"]
+    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment", "student_id", "student_name", "department", "mail_id"]
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -274,46 +343,70 @@ def insert_slot_staff_incharge(db: PostgresqlDB, equipment_id: str, start_time: 
 
 
 def is_member_of(db: PostgresqlDB):
-    user = list(db.execute_dql_commands("select current_user"))[0][0]
-    group = "students"
-    query = f"select is_member_of('{user}', '{group}')"
-    result = list(db.execute_dql_commands(query))[0][0]
-    if result:
-        return group
+    try:
+        user = list(db.execute_dql_commands("select current_user"))[0][0]
+    except Exception:
+        return None
 
-    group = "faculty"
-    query = f"select is_member_of('{user}', '{group}')"
-    result = list(db.execute_dql_commands(query))[0][0]
-    if result:
-        return group
+    # 1. Bulletproof Admin Check (Checks DB Role AND Username)
+    try:
+        is_admin = list(db.execute_dql_commands(f"SELECT pg_has_role('{user}', 'admin', 'MEMBER')"))[0][0]
+        if is_admin or "admin" in user.lower():
+            return "admin"
+    except Exception:
+        # Fallback just in case the Postgres role is missing but the username is admin
+        if "admin" in user.lower():
+            return "admin"
 
-    group = "staff"
-    query = f"select is_member_of('{user}', '{group}')"
-    result = list(db.execute_dql_commands(query))[0][0]
-    if result:
-        return group
-    group = "admin"
-    query = f"select is_member_of('{user}', '{group}')"
-    result = list(db.execute_dql_commands(query))[0][0]
-    if result:
-        return group
+    # 2. Check Faculty Safely
+    try:
+        query = f"select is_member_of('{user}', 'faculty')"
+        if list(db.execute_dql_commands(query))[0][0]:
+            return "faculty"
+    except Exception:
+        pass # Ignore database errors and move to the next check
+
+    # 3. Check Staff Safely
+    try:
+        query = f"select is_member_of('{user}', 'staff')"
+        if list(db.execute_dql_commands(query))[0][0]:
+            return "staff"
+    except Exception:
+        pass
+
+    # 4. Check Students Safely
+    try:
+        query = f"select is_member_of('{user}', 'students')"
+        if list(db.execute_dql_commands(query))[0][0]:
+            return "student"
+    except Exception:
+        pass
 
     return None
-
 
 def show_requests_student(db: PostgresqlDB):
     user = list(db.execute_dql_commands("select current_user"))[0][0]
     view = "request_" + user
-    query = f"select {view}.request_id, {view}.slot_id, slot.equipment_id, {view}.proj_id, slot.slot_time from {view}, slot where slot.slot_id = {view}.slot_id"
-    query2 = f"select "
+    
+    # FIX: Define the record as 'approval_status' and then cast it to text (::text)
+    query = f"""
+        SELECT v.request_id, v.slot_id, e.equipment_name, v.proj_id, s.slot_time, 
+               (SELECT status::text FROM check_status(v.request_id) AS cs(status approval_status) LIMIT 1) as status
+        FROM {view} v
+        JOIN slot s ON s.slot_id = v.slot_id
+        JOIN equipment e ON s.equipment_id = e.equipment_id
+    """
+    
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "slot_id", "equipment_id", "proj_id", "slot_time"]
+    fields = ["request_id", "slot_id", "equipment_name", "proj_id", "slot_time", "status"]
+    
     for i in r:
         record = {}
         for j in range(len(i)):
             record[fields[j]] = i[j]
         result.append(record)
+        
     return result
 
 
@@ -896,3 +989,11 @@ def get_equipment_slots(db: PostgresqlDB, equipment_id: str):
     rows = list(db.execute_dql_commands(query))
     result = [{"slot_id": row[0], "slot_time": str(row[1]), "slot_status": row[2]} for row in rows]
     return result
+
+def add_department(db: PostgresqlDB, department_id: str, department_name: str):
+    """Inserts a new department into the database."""
+    query = f"""
+    INSERT INTO department (department_id, department_name)
+    VALUES ('{department_id}', '{department_name}');
+    """
+    db.execute_ddl_and_dml_commands(query)

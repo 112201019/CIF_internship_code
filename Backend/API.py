@@ -899,17 +899,33 @@ async def update_profile(data: ProfileUpdateRequest):
             
         role = result[0][0]
         
-        # Thanks to RLS, even if someone hacked this query to say "WHERE student_id = 'someone_else'", 
-        # PostgreSQL would block it!
+        #     # Thanks to RLS, even if someone hacked this query to say "WHERE student_id = 'someone_else'", 
+        #     # PostgreSQL would block it!
+        #     if role == 'student':
+        #         update_q = "UPDATE student SET mail_id = :mail, password = :pwd WHERE student_id = current_user"
+        #     elif role == 'faculty':
+        #         update_q = "UPDATE faculty SET mail_id = :mail, password = :pwd WHERE faculty_id = current_user"
+        #     elif role == 'staff':
+        #         update_q = "UPDATE staff SET mail_id = :mail, password = :pwd WHERE staff_id = current_user"
+
+        #     db.execute_ddl_and_dml_commands(update_q, values={"mail": data.mail_id, "pwd": data.password})
+
+        #     db = None
+        #     return {"message": "Profile updated successfully! Note: Your DB credentials have been synced."}
         if role == 'student':
-            update_q = "UPDATE student SET mail_id = :mail, password = :pwd WHERE student_id = current_user"
+                update_q = "UPDATE student SET mail_id = :mail, password = :pwd WHERE student_id = current_user"
         elif role == 'faculty':
             update_q = "UPDATE faculty SET mail_id = :mail, password = :pwd WHERE faculty_id = current_user"
         elif role == 'staff':
             update_q = "UPDATE staff SET mail_id = :mail, password = :pwd WHERE staff_id = current_user"
-            
+
         db.execute_ddl_and_dml_commands(update_q, values={"mail": data.mail_id, "pwd": data.password})
-        
+
+        # --- NEW FIX: Update the backend's active session memory with the new password ---
+        if data.token in users:
+            current_username = users[data.token][0]
+            users[data.token] = (current_username, data.password)
+        # ---------------------------------------------------------------------------------
         db = None
         return {"message": "Profile updated successfully! Note: Your DB credentials have been synced."}
     except Exception as err:
@@ -935,3 +951,22 @@ async def get_equipment_slots_endpoint(data: EquipmentByID):
         return {"message": "success", "data": res}
     except Exception as e:
         return {"message": "ERROR", "details": str(e)}
+    
+from BaseModels import AddDepartmentModel 
+
+@app.post("/admin/add_department")
+async def add_department(data: AddDepartmentModel):
+    if not is_admin(data.token):
+        return {"message": "Unauthorized"}
+    try:
+        db = open_connection(data.token)
+        database_handler.add_department(db, data.department_id, data.department_name)
+        db = None
+        return {"message": "Department added successfully!"}
+    except Exception as err:
+        print(f"Error adding department: {err}")
+        # Check if the department ID already exists (Unique Violation)
+        if "unique constraint" in str(err).lower() or "duplicate key" in str(err).lower():
+            return {"message": f"Error: Department ID '{data.department_id}' already exists."}
+        return {"message": f"ERROR: {str(err)}"}
+    

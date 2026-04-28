@@ -1,5 +1,5 @@
 let selectedProjectID = null; 
-host='10.128.13.76'
+host='localhost'
 
 // --- COOKIE & HELPER FUNCTIONS ---
 function setCookie(name, value, days = 1) {

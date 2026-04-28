@@ -122,3 +122,8 @@ class ProfileUpdateRequest(BaseModel):
     token: str
     mail_id: str
     password: str
+
+class AddDepartmentModel(BaseModel):
+    token: str
+    department_id: str
+    department_name: str
