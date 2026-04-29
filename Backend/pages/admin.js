@@ -923,7 +923,7 @@ async function showReportsSection() {
 
         contentArea.innerHTML = `
             <div class="form-container" style="max-width: 600px;">
-                <h2>Export Faculty Experiment Report</h2>
+                <h2>Export Consolidated Invoice (PDF)</h2>
                 <form id="reportForm" onsubmit="handleReportExport(event)">
                     <div class="form-group">
                         <label>Select Faculty:</label>
@@ -932,16 +932,16 @@ async function showReportsSection() {
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Start Date:</label>
+                        <label>Billing Start Date:</label>
                         <input type="date" id="report_start_date" required>
                     </div>
                     <div class="form-group">
-                        <label>End Date:</label>
+                        <label>Billing End Date:</label>
                         <input type="date" id="report_end_date" required>
                     </div>
-                    <button type="submit">Download Excel (CSV)</button>
+                    <button type="submit" style="background-color: #3498db; width: 100%;">Download Invoice (PDF)</button>
                 </form>
-                <div id="reportMessage" style="margin-top:15px; font-weight:bold;"></div>
+                <div id="reportMessage" style="margin-top:15px; font-weight:bold; text-align: center;"></div>
             </div>
         `;
     } catch (error) {
@@ -949,14 +949,41 @@ async function showReportsSection() {
     }
 }
 
+// Helper to convert Numbers into Words for the Invoice
+function convertNumberToWords(amount) {
+    const words = [];
+    words[0] = ''; words[1] = 'One'; words[2] = 'Two'; words[3] = 'Three'; words[4] = 'Four'; words[5] = 'Five'; words[6] = 'Six'; words[7] = 'Seven'; words[8] = 'Eight'; words[9] = 'Nine'; words[10] = 'Ten'; words[11] = 'Eleven'; words[12] = 'Twelve'; words[13] = 'Thirteen'; words[14] = 'Fourteen'; words[15] = 'Fifteen'; words[16] = 'Sixteen'; words[17] = 'Seventeen'; words[18] = 'Eighteen'; words[19] = 'Nineteen';
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if (amount === 0) return 'Zero';
+    let numStr = amount.toString();
+    if (numStr.length > 9) return 'Overflow';
+    
+    const n = ('000000000' + numStr).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return '';
+    
+    let str = '';
+    str += (n[1] != 0) ? (words[Number(n[1])] || tens[n[1][0]] + ' ' + words[n[1][1]]) + ' Crore ' : '';
+    str += (n[2] != 0) ? (words[Number(n[2])] || tens[n[2][0]] + ' ' + words[n[2][1]]) + ' Lakh ' : '';
+    str += (n[3] != 0) ? (words[Number(n[3])] || tens[n[3][0]] + ' ' + words[n[3][1]]) + ' Thousand ' : '';
+    str += (n[4] != 0) ? (words[Number(n[4])] || tens[n[4][0]] + ' ' + words[n[4][1]]) + ' Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (words[Number(n[5])] || tens[n[5][0]] + ' ' + words[n[5][1]]) : '';
+    
+    return str.trim();
+}
+
 async function handleReportExport(event) {
     event.preventDefault();
     const msgDiv = document.getElementById("reportMessage");
-    msgDiv.textContent = "Generating report...";
+    msgDiv.textContent = "Generating invoice...";
     msgDiv.style.color = "black";
 
     const token = getCookie();
-    const faculty_id = document.getElementById("report_faculty_id").value;
+    const facultySelect = document.getElementById("report_faculty_id");
+    const faculty_id = facultySelect.value;
+    // Extract name for the PDF label (remove the ID part in parentheses)
+    const faculty_name = facultySelect.options[facultySelect.selectedIndex].text.split(' (')[0];
+    
     const start_date = document.getElementById("report_start_date").value;
     const end_date = document.getElementById("report_end_date").value;
 
@@ -976,40 +1003,140 @@ async function handleReportExport(event) {
                 return;
             }
 
-            // Convert JSON to Excel-compatible CSV
-            let csvContent = "S.no,Request ID,Equipment Name,Equipment ID,Project Name,Experiment Finished Date,Experiment Scheduled Time,Slots Booked,Initial Cost,Extra Charges,Reason for Extra Charges,Total Charges\n";
+            // --- INITIALIZE JSPDF ---
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.width;
             
-            data.forEach((row, index) => {
-                const escapeCsv = (str) => '"' + String(str).replace(/"/g, '""') + '"';
-                
-                const rowData = [
-                    index + 1,
-                    row.request_id,
-                    escapeCsv(row.equipment_name),
-                    escapeCsv(row.equipment_id),
-                    escapeCsv(row.project_title),
-                    escapeCsv(row.completion_time),
-                    escapeCsv(row.slot_time),
-                    row.slot_count,
-                    row.initial_cost,
-                    row.extra_charges,
-                    escapeCsv(row.remark),
-                    row.total_charges
-                ];
-                csvContent += rowData.join(",") + "\n";
+            // Generate dynamic invoice number
+            const today = new Date();
+            const formattedToday = today.toLocaleDateString('en-GB'); // DD/MM/YYYY
+            const invoiceNo = `CIF/${today.getFullYear()}/Q${Math.floor((today.getMonth() + 3) / 3)}/${faculty_name.split(' ')[0].toUpperCase()}/${Math.floor(Math.random() * 100)}`;
+
+            // Calculate totals and group by Project
+            let grandTotal = 0;
+            const projectTotals = {};
+            data.forEach(row => {
+                const cost = parseFloat(row.total_charges) || 0;
+                grandTotal += cost;
+                const pTitle = row.project_title || 'Uncategorized';
+                if (!projectTotals[pTitle]) projectTotals[pTitle] = 0;
+                projectTotals[pTitle] += cost;
             });
 
-            // Trigger the download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Report_${faculty_id}_${start_date}_to_${end_date}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // ================= PAGE 1: SUMMARY INVOICE =================
+            // Header Text
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("IIT PALAKKAD", pageWidth / 2, 20, { align: "center" });
+            
+            doc.setFontSize(12);
+            doc.text("Consolidated Invoice for Analytical Services", pageWidth / 2, 28, { align: "center" });
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Central Instrumentation Facility - Central Micro-Nano Fabrication Facility", pageWidth / 2, 34, { align: "center" });
 
-            msgDiv.textContent = "Report downloaded successfully!";
+            // Intro block
+            doc.text("The invoice for the analytical charges of your samples in CIF-CMFF for the billing period has been", 14, 45);
+            doc.text("generated. You are kindly requested to pay the charges.", 14, 51);
+
+            // Left Block: Bill To
+            doc.setFont("helvetica", "bold");
+            doc.text("Bill to", 14, 65);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Dr. ${faculty_name}`, 14, 72);
+            doc.text("Faculty In-Charge", 14, 78);
+            
+            // Right Block: Invoice Info
+            doc.setFont("helvetica", "bold");
+            doc.text("Invoice No.", 140, 65);
+            doc.setFont("helvetica", "normal");
+            doc.text(invoiceNo, 140, 72);
+            
+            doc.setFont("helvetica", "bold");
+            doc.text("Dated", 140, 82);
+            doc.setFont("helvetica", "normal");
+            doc.text(formattedToday, 140, 89);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Billing Period:", 14, 93);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${new Date(start_date).toLocaleDateString('en-GB')} to ${new Date(end_date).toLocaleDateString('en-GB')}`, 14, 100);
+
+            // Create Summary Table Data
+            const summaryBody = Object.keys(projectTotals).map(proj => [
+                proj,
+                "Annexure A",
+                `Rs. ${projectTotals[proj]}`
+            ]);
+            
+            // Add Total Row
+            summaryBody.push([{ content: 'Total', colSpan: 2, styles: { fontStyle: 'bold', halign: 'right' } }, `Rs. ${grandTotal}`]);
+
+            // Draw Summary Table
+            doc.autoTable({
+                startY: 105,
+                head: [["Project Code used for service", "Billing Details", "Amount (INR)"]],
+                body: summaryBody,
+                theme: 'grid',
+                headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 15;
+
+            // Amount in words
+            doc.setFont("helvetica", "bold");
+            doc.text(`Amount Chargeable in INR (in words): Rupees ${convertNumberToWords(grandTotal)} Only`, 14, finalY);
+
+            // Footer Disclaimer
+            finalY += 10;
+            doc.setFont("helvetica", "normal");
+            doc.text("The amount mentioned in the invoice shall be debited from the project account to the bank account", 14, finalY);
+            doc.text("IIT PALAKKAD I-STEM towards the payment of analytical services.", 14, finalY + 6);
+
+            // Signatures
+            finalY += 35;
+            doc.setFont("helvetica", "bold");
+            doc.text("For Office ICSR", 14, finalY);
+            doc.text("For Finance & Accounts", 140, finalY);
+
+            // ================= PAGE 2: ANNEXURE A (Detailed Data) =================
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("Annexure A", pageWidth / 2, 20, { align: "center" });
+
+            // Create Detailed Table Data
+            const detailsBody = data.map((row, index) => {
+                const dateStr = row.completion_time ? new Date(row.completion_time).toLocaleDateString('en-GB') : new Date(row.slot_time).toLocaleDateString('en-GB');
+                return [
+                    index + 1,
+                    row.equipment_name,
+                    row.request_id,
+                    dateStr,
+                    row.initial_cost,
+                    row.extra_charges,
+                    row.project_title,
+                    row.total_charges
+                ];
+            });
+
+            // Draw Detailed Table
+            doc.autoTable({
+                startY: 30,
+                head: [["Sl. No", "Equipment", "Req. ID", "Date of Completion", "Initial Cost", "Extra Charges", "Project Code", "Total Cost"]],
+                body: detailsBody,
+                theme: 'grid',
+                headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+                styles: { fontSize: 9 }
+            });
+
+            // Save PDF
+            const cleanName = faculty_name.replace(/[^a-zA-Z0-9 ]/g, "");
+            doc.save(`Dr. ${cleanName} Invoice ${start_date}_to_${end_date}.pdf`);
+
+            msgDiv.textContent = "Invoice downloaded successfully!";
             msgDiv.style.color = "green";
         } else {
             msgDiv.textContent = "Failed: " + result.message;
@@ -1020,7 +1147,6 @@ async function handleReportExport(event) {
         msgDiv.style.color = "red";
     }
 }
-
 async function handleAddDepartment(event) {
     event.preventDefault();
     
