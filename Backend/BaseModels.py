@@ -130,3 +130,19 @@ class AddDepartmentModel(BaseModel):
     token: str
     department_id: str
     department_name: str
+
+#############################
+class ExtraFundModel(BaseModel):
+    token: str
+    project_id: str
+    requested_amount: int
+    reason: str
+
+class ApproveExtraFundModel(BaseModel):
+    token: str
+    req_id: int
+    approved_amount: int
+    
+class RejectExtraFundModel(BaseModel):
+    token: str
+    req_id: int

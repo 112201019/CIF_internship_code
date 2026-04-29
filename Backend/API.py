@@ -974,3 +974,45 @@ async def add_department(data: AddDepartmentModel):
             return {"message": f"Error: Department ID '{data.department_id}' already exists."}
         return {"message": f"ERROR: {str(err)}"}
     
+@app.post("/faculty/request_extra_fund")
+async def req_extra_fund(data: ExtraFundModel):
+    try:
+        db = open_connection(data.token)
+        database_handler.request_extra_fund(db, data.project_id, data.requested_amount, data.reason)
+        db = None
+        return {"message": "Extra fund request submitted successfully!"}
+    except Exception as e:
+        return {"message": f"ERROR: {str(e)}"}
+
+@app.post("/admin/pending_fund_requests")
+async def pending_fund_reqs(token: Token):
+    if not is_admin(token.token): return {"message": "Unauthorized"}
+    try:
+        db = open_connection(token.token)
+        res = database_handler.get_pending_fund_requests(db)
+        db = None
+        return {"message": res}
+    except Exception as e:
+        return {"message": f"ERROR: {str(e)}"}
+
+@app.post("/admin/approve_extra_fund")
+async def approve_ext_fund(data: ApproveExtraFundModel):
+    if not is_admin(data.token): return {"message": "Unauthorized"}
+    try:
+        db = open_connection(data.token)
+        database_handler.approve_extra_fund(db, data.req_id, data.approved_amount)
+        db = None
+        return {"message": "Funds approved and added to project successfully!"}
+    except Exception as e:
+        return {"message": f"ERROR: {str(e)}"}
+
+@app.post("/admin/reject_extra_fund")
+async def reject_ext_fund(data: RejectExtraFundModel):
+    if not is_admin(data.token): return {"message": "Unauthorized"}
+    try:
+        db = open_connection(data.token)
+        database_handler.reject_extra_fund(db, data.req_id)
+        db = None
+        return {"message": "Fund request rejected successfully."}
+    except Exception as e:
+        return {"message": f"ERROR: {str(e)}"}

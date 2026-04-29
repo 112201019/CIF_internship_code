@@ -1011,3 +1011,49 @@ def update_equipment_costs(db: PostgresqlDB, equipment_id: str, cost_updates: di
             "req_name": req_name,
             "eq_id": equipment_id
         })
+
+def request_extra_fund(db: PostgresqlDB, project_id: str, amount: int, reason: str):
+    query = """
+        INSERT INTO extra_fund_request (project_id, requested_amount, reason, status)
+        VALUES (:pid, :amount, :reason, 'pending')
+    """
+    db.execute_ddl_and_dml_commands(query, {"pid": project_id, "amount": amount, "reason": reason})
+
+def get_pending_fund_requests(db: PostgresqlDB):
+    query = """
+        SELECT f.req_id, f.project_id, p.project_title, p.faculty_incharge_id, f.requested_amount, f.reason
+        FROM extra_fund_request f
+        JOIN project p ON f.project_id = p.project_id
+        WHERE f.status = 'pending'
+    """
+    rows = list(db.execute_dql_commands(query))
+    result = []
+    for r in rows:
+        result.append({
+            "req_id": r[0], "project_id": r[1], "project_title": r[2],
+            "faculty_id": r[3], "requested_amount": r[4], "reason": r[5]
+        })
+    return result
+
+def approve_extra_fund(db: PostgresqlDB, req_id: int, approved_amount: int):
+    # 1. Approve the request
+    db.execute_ddl_and_dml_commands(
+        "UPDATE extra_fund_request SET status = 'approved' WHERE req_id = :req_id", 
+        {"req_id": req_id}
+    )
+    # 2. Get the project ID
+    proj = list(db.execute_dql_commands(f"SELECT project_id FROM extra_fund_request WHERE req_id = {req_id}"))
+    if not proj: raise ValueError("Request not found")
+    pid = proj[0][0]
+    # 3. Safely add the money to the project's 'money' column
+    db.execute_ddl_and_dml_commands(
+        "UPDATE project SET money = COALESCE(money, 0) + :amount WHERE project_id = :pid",
+        {"amount": approved_amount, "pid": pid}
+    )
+
+def reject_extra_fund(db: PostgresqlDB, req_id: int):
+    db.execute_ddl_and_dml_commands(
+        "UPDATE extra_fund_request SET status = 'rejected' WHERE req_id = :req_id", 
+        {"req_id": req_id}
+    )
+

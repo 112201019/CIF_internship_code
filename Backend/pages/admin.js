@@ -1178,3 +1178,121 @@ async function handleAddDepartmentInline(event) {
         btn.disabled = false;
     }
 }
+
+// ==========================================
+// ADMIN EXTRA FUND APPROVAL SYSTEM
+// ==========================================
+
+async function showFundRequests() {
+    const token = getCookie();
+    const contentArea = document.getElementById('contentArea');
+    contentArea.innerHTML = `<p style="text-align:center; padding: 40px; color:#666;">Loading fund requests...</p>`;
+
+    try {
+        const response = await fetch('http://'+host+':8000/admin/pending_fund_requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+        });
+        const data = await response.json();
+
+        let html = `<h2>Pending Extra Fund Requests</h2><table class="data-table"><thead><tr>
+            <th>Req ID</th><th>Project ID</th><th>Title</th><th>Requested Amount</th><th>Reason</th><th>Actions</th>
+        </tr></thead><tbody>`;
+
+        if (data.message && data.message.length > 0) {
+            data.message.forEach(req => {
+                html += `<tr>
+                    <td><strong>#${req.req_id}</strong></td>
+                    <td>${req.project_id}</td>
+                    <td>${req.project_title}</td>
+                    <td style="color: #27ae60; font-weight: bold; font-size: 1.1em;">₹${req.requested_amount}</td>
+                    <td style="max-width: 250px; word-wrap: break-word; font-size: 0.9em; color: #555;">${req.reason}</td>
+                    <td class="actions">
+                        <button onclick="showFundApprovalForm(${req.req_id}, '${req.project_id}', ${req.requested_amount})" style="background-color: #27ae60;">Approve</button>
+                        <button onclick="handleRejectFund(${req.req_id})" style="background-color: #e74c3c;">Reject</button>
+                    </td>
+                </tr>`;
+            });
+        } else {
+            html += '<tr><td colspan="6" class="no-data">No pending fund requests found.</td></tr>';
+        }
+        html += '</tbody></table>';
+        contentArea.innerHTML = html;
+    } catch (error) {
+        displayError('Failed to load fund requests.');
+    }
+}
+
+function showFundApprovalForm(reqId, projectId, requestedAmount) {
+    const contentArea = document.getElementById('contentArea');
+    contentArea.innerHTML = `
+        <div class="form-container" style="max-width: 500px; border-top: 4px solid #27ae60;">
+            <h2>Approve Funds: ${projectId}</h2>
+            <p style="color: #444; margin-bottom: 20px; font-size: 1.1em;">Faculty requested: <strong style="color:#27ae60;">₹${requestedAmount}</strong></p>
+            
+            <form onsubmit="handleApproveFund(event, ${reqId})">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="approved_amount" style="font-weight:bold;">Final Amount to Approve (₹):</label>
+                    <input type="number" id="approved_amount" value="${requestedAmount}" required min="1" style="width:100%; padding:10px; font-size:1.1em;">
+                    <small style="color:#888; display:block; margin-top:5px;">You can approve the exact requested amount, or modify it.</small>
+                </div>
+                <button type="submit" style="background-color: #27ae60; padding: 10px 20px; border:none; color:white; border-radius:4px; font-weight:bold; cursor:pointer;">Confirm Approval</button>
+                <button type="button" onclick="showFundRequests()" style="background-color: #95a5a6; padding: 10px 20px; border:none; color:white; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:10px;">Cancel</button>
+            </form>
+        </div>
+    `;
+}
+
+async function handleApproveFund(event, reqId) {
+    event.preventDefault();
+    const token = getCookie();
+    const approvedAmount = document.getElementById('approved_amount').value;
+    const btn = event.target.querySelector('button[type="submit"]');
+
+    btn.innerHTML = "Processing...";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('http://'+host+':8000/admin/approve_extra_fund', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token, req_id: reqId, approved_amount: parseInt(approvedAmount) })
+        });
+        const result = await response.json();
+
+        if (result.message.includes("successfully")) {
+            showSuccessMessage(result.message);
+            showFundRequests(); 
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        displayError(`Failed to approve funds: ${error.message}`);
+        btn.innerHTML = "Confirm Approval";
+        btn.disabled = false;
+    }
+}
+
+async function handleRejectFund(reqId) {
+    if (!confirm('Are you sure you want to REJECT this extra fund request?')) return;
+
+    const token = getCookie();
+    try {
+        const response = await fetch('http://'+host+':8000/admin/reject_extra_fund', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token, req_id: reqId })
+        });
+        const result = await response.json();
+
+        if (result.message.includes("successfully")) {
+            showSuccessMessage("Fund request rejected.");
+            showFundRequests();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        displayError(`Failed to reject funds: ${error.message}`);
+    }
+}

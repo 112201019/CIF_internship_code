@@ -1111,7 +1111,6 @@ async function showMyProjects() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     });
-
     const data = await response.json();
 
     if (!response.ok || !Array.isArray(data.message)) {
@@ -1123,39 +1122,50 @@ async function showMyProjects() {
       return;
     }
 
-    // Build the table to display project data
+    // Build the table with the new Actions column
     let tableHtml = `
-      <table style="width: 100%; border-collapse: collapse;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
         <thead>
-          <tr>
-            <th style="border: 1px solid #333; padding: 8px;">Title</th>
-            <th style="border: 1px solid #333; padding: 8px;">Type</th> <th style="border: 1px solid #333; padding: 8px;">Status</th>
-            <th style="border: 1px solid #333; padding: 8px;">Funds Allocated</th>
-            <th style="border: 1px solid #333; padding: 8px;">Expiry Date</th>
+          <tr style="background-color: #f4f4f4;">
+            <th style="border: 1px solid #ddd; padding: 10px;">Title</th>
+            <th style="border: 1px solid #ddd; padding: 10px;">Type</th> 
+            <th style="border: 1px solid #ddd; padding: 10px;">Status</th>
+            <th style="border: 1px solid #ddd; padding: 10px;">Funds</th>
+            <th style="border: 1px solid #ddd; padding: 10px;">Expiry Date</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Actions</th>
           </tr>
         </thead>
         <tbody>
     `;
 
     data.message.forEach(project => {
-      const funds = project.status === 'approved' ? `$${project.money}` : 'Not Allocated';
+      const funds = project.status === 'approved' ? `₹${project.money}` : 'N/A';
       const expiry = project.status === 'approved' ? (project.expiry_date || 'N/A') : 'N/A';
 
-      let statusColor = 'orange'; // Pending
-      if (project.status === 'approved') statusColor = 'green';
-      if (project.status === 'rejected') statusColor = 'red';
+      let statusColor = '#f39c12'; // Pending
+      if (project.status === 'approved') statusColor = '#27ae60'; // Approved
+      if (project.status === 'rejected') statusColor = '#e74c3c'; // Rejected
 
-      // Clean up the display of the project type name
       const projectTypeDisplay = project.project_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+      // Only show the Request Funds button if the project is actually approved!
+      let actionBtn = "";
+      if (project.status === 'approved') {
+          actionBtn = `<button onclick="openFundModal('${project.project_id}')" style="background-color:#3498db; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">+ Request Funds</button>`;
+      } else {
+          actionBtn = `<span style="color:#aaa; font-size:12px; font-style:italic;">Unavailable</span>`;
+      }
 
       tableHtml += `
         <tr>
-          <td style="border: 1px solid #333; padding: 8px;">${project.project_title}</td>
-          <td style="border: 1px solid #333; padding: 8px;">${projectTypeDisplay}</td> <td style="border: 1px solid #333; padding: 8px; color: ${statusColor}; text-transform: capitalize;">
-            <b>${project.status}</b>
+          <td style="border: 1px solid #ddd; padding: 10px;">${project.project_title}</td>
+          <td style="border: 1px solid #ddd; padding: 10px;">${projectTypeDisplay}</td> 
+          <td style="border: 1px solid #ddd; padding: 10px; color: ${statusColor}; text-transform: capitalize; font-weight: bold;">
+            ${project.status}
           </td>
-          <td style="border: 1px solid #333; padding: 8px;">${funds}</td>
-          <td style="border: 1px solid #333; padding: 8px;">${expiry}</td>
+          <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${funds}</td>
+          <td style="border: 1px solid #ddd; padding: 10px;">${expiry}</td>
+          <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${actionBtn}</td>
         </tr>
       `;
     });
@@ -1552,5 +1562,40 @@ async function handleProfileUpdate(e) {
             btn.innerHTML = originalText;
             btn.classList.remove("btn-loading");
         }
+    }
+}
+
+function openFundModal(projectId) {
+    document.getElementById('fund_proj_id_display').textContent = projectId;
+    document.getElementById('fund_proj_id').value = projectId;
+    document.getElementById('fundRequestModal').style.display = 'block';
+}
+
+function closeFundModal() {
+    document.getElementById('fundRequestModal').style.display = 'none';
+    document.getElementById('fundRequestForm').reset();
+}
+
+async function submitFundRequest(event) {
+    event.preventDefault();
+    const payload = {
+        token: getCookie("session_token") || getCookie(),
+        project_id: document.getElementById('fund_proj_id').value,
+        requested_amount: parseInt(document.getElementById('fund_amount').value),
+        reason: document.getElementById('fund_reason').value
+    };
+
+    try {
+        const res = await fetch("http://" + host + ":8000/faculty/request_extra_fund", {
+            method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        const resDiv = document.getElementById('fundRequestResult');
+        
+        resDiv.textContent = data.message;
+        resDiv.style.color = data.message.includes("successfully") ? "green" : "red";
+        if(data.message.includes("successfully")) setTimeout(closeFundModal, 1500);
+    } catch(e) {
+        document.getElementById('fundRequestResult').textContent = "Network Error";
     }
 }
