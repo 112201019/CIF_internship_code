@@ -1057,3 +1057,15 @@ def reject_extra_fund(db: PostgresqlDB, req_id: int):
         {"req_id": req_id}
     )
 
+def auto_expire_projects(db: PostgresqlDB):
+    """
+    Silently checks for any projects that have passed their expiry date.
+    Sets their money to 0 and changes their status to 'expired'.
+    """
+    query = """
+        UPDATE project 
+        SET money = 0, status = 'expired'
+        WHERE expiry_date < CURRENT_DATE 
+        AND status = 'approved';
+    """
+    db.execute_ddl_and_dml_commands(query)

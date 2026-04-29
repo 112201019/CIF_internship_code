@@ -583,6 +583,9 @@ async def get_pending_projects(token: Token):
         return {"message": "Unauthorized"}
     try:
         db = open_connection(token.token)
+        # --- NEW: Clean up expired projects for the admin too! ---
+        database_handler.auto_expire_projects(db)
+        # ---------------------------------------------------------
         result = database_handler.get_pending_projects(db)
         return {"message": result}
     except Exception as err:
@@ -608,6 +611,9 @@ async def approve_project(data: ApproveProjectModel):
 async def get_faculty_projects(token: Token):
     try:
         db = open_connection(token.token)
+        # --- NEW: Clean up expired projects before showing them! ---
+        database_handler.auto_expire_projects(db)
+        # -----------------------------------------------------------
         result = database_handler.get_projects_by_faculty(db)
         return {"message": result}
     except Exception as err:
