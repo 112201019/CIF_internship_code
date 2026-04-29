@@ -93,7 +93,7 @@ function selectProject(projectID) {
   if (selectedRow) selectedRow.classList.add("selected-project");
 }
 
-// --- NEW: FETCH REQUIREMENTS & QUESTIONS ---
+// --- FETCH REQUIREMENTS & QUESTIONS ---
 async function fetchRequirements(token, equipmentId) {
     try {
         const response = await fetch("http://" + host + ":8000/get_equipment_requirements", {
@@ -102,7 +102,7 @@ async function fetchRequirements(token, equipmentId) {
             body: JSON.stringify({ token: token, ID: equipmentId })
         });
         const data = await response.json();
-        return data.message; // Returns { requirements: [], questions: [] }
+        return data.message; 
     } catch (e) {
         console.error("Error fetching requirements", e);
         return null;
@@ -141,7 +141,6 @@ function trackRequest() {
       message.forEach((element) => {
         const div = document.createElement("div");
         div.classList.add("book");
-        // We create a container for the FORM specific to this equipment ID
         const formId = `req-form-${element.equipment_id}`;
         
         div.innerHTML = `
@@ -172,10 +171,10 @@ function trackRequest() {
                           formHtml += `
                             <div style="margin-bottom:5px;">
                                 <input type="checkbox" class="req-checkbox" value="${req.name}" data-cost="${req.cost}">
-                                <label> ${req.name} (Add-on Cost: ${req.cost})</label>
+                                <label> ${req.name} (Add-on Cost: ₹${req.cost})</label>
                             </div>`;
                       } else {
-                          formHtml += `<p style="font-size:0.9em; color:#555;">Note: ${req.name} costs ${req.cost} per slot.</p>`;
+                          formHtml += `<p style="font-size:0.9em; color:#555;">Note: ${req.name} costs ₹${req.cost} per slot.</p>`;
                       }
                   });
               } else {
@@ -184,7 +183,7 @@ function trackRequest() {
 
               // Text Inputs for Questions
               if (reqData.questions.length > 0) {
-                  formHtml += "<h4 style='margin-top:15px;'>Additional Info</h4>";
+                  formHtml += "<h4 style='margin-top:15px;'>Additional Info <span style='color:red; font-size: 0.8em;'>*Mandatory</span></h4>";
                   reqData.questions.forEach(q => {
                       formHtml += `
                         <div style="margin-bottom:10px;">
@@ -193,11 +192,13 @@ function trackRequest() {
                         </div>`;
                   });
               }
+              
+              // Changed ID to Class to prevent duplicate ID bugs
               formHtml += `
-                  <h4 style='margin-top:15px;'>User Comments</h4>
+                  <h4 style='margin-top:15px;'>User Comments <span style='color:grey; font-size: 0.8em;'>(Optional)</span></h4>
                   <div style="margin-bottom:10px;">
                       <label style="display:block; font-weight:bold; font-size:0.9em;">Any special remarks?</label>
-                      <textarea id="user-comment" rows="3" style="width:95%; padding:5px; border:1px solid #ccc; border-radius:3px;" placeholder="Optional..."></textarea>
+                      <textarea class="user-comment-input" rows="3" style="width:95%; padding:5px; border:1px solid #ccc; border-radius:3px;" placeholder="Optional..."></textarea>
                   </div>`;
               
               formContainer.innerHTML = formHtml;
@@ -221,7 +222,6 @@ function trackRequest() {
                   return;
               }
 
-              // Sort slots
               slotData.message.sort((a, b) => a.slot_id - b.slot_id);
 
               slotData.message.forEach((slot) => {
@@ -244,36 +244,49 @@ function trackRequest() {
                 slotDiv.appendChild(slotButton);
                 slots.appendChild(slotDiv);
 
-                // --- BOOKING CLICK HANDLER ---
+                // --- STRICT BOOKING VALIDATION HANDLER ---
                 slotButton.addEventListener("click", () => {
                   if (!selectedProjectID) {
                     alert("Please select a project from the table above first.");
                     return;
                   }
-                  const userComment = document.getElementById("user-comment") ? document.getElementById("user-comment").value.trim() : "";
+                  
                   const count = parseInt(slotDiv.querySelector(".slot-count").value);
                   if (count < 1) { alert("Invalid duration"); return; }
 
-                  // --- NEW: GATHER FORM DATA ---
-                  // 1. Get Checkboxes (Requirements)
+                  // --- 1. Validate Checkboxes (Requirements) ---
+                  const allCheckboxes = formContainer.querySelectorAll('.req-checkbox');
                   const selectedReqs = [];
-                  formContainer.querySelectorAll('.req-checkbox:checked').forEach(cb => {
-                      selectedReqs.push(cb.value);
+                  allCheckboxes.forEach(cb => {
+                      if (cb.checked) selectedReqs.push(cb.value);
                   });
+                  
+                  // RULE: If checkboxes exist, at least ONE must be checked
+                  if (allCheckboxes.length > 0 && selectedReqs.length === 0) {
+                      alert("Validation Error: Please select at least one usage requirement (Feature/Add-on) for this equipment.");
+                      return;
+                  }
 
-                  // 2. Get Answers
+                  // --- 2. Validate Answers (Extra Info) ---
                   const answers = {};
                   let missingAnswer = false;
                   formContainer.querySelectorAll('.req-answer').forEach(input => {
-                      if(input.value.trim() === "") missingAnswer = true;
-                      answers[input.dataset.question] = input.value.trim();
+                      const val = input.value.trim();
+                      if (val === "") missingAnswer = true;
+                      answers[input.dataset.question] = val;
                   });
 
+                  // RULE: Extra info is mandatory
                   if(missingAnswer) {
-                      if(!confirm("Some additional info fields are empty. Proceed anyway?")) return;
+                      alert("Validation Error: Please fill out all mandatory 'Additional Info' fields.");
+                      return;
                   }
 
-                  // 3. Prepare Data Payload
+                  // --- 3. Gather Optional Comment ---
+                  const commentInput = formContainer.querySelector(".user-comment-input");
+                  const userComment = commentInput ? commentInput.value.trim() : "";
+
+                  // --- 4. Prepare Data Payload ---
                   const finalRequestData = JSON.stringify({
                       requirements: selectedReqs,
                       answers: answers
@@ -284,11 +297,14 @@ function trackRequest() {
                     slot_id: slot.slot_id,
                     project_id: selectedProjectID,
                     count: count,
-                    request_data: finalRequestData, // Sending the JSON string
+                    request_data: finalRequestData, 
                     comment: userComment
                   };
 
                   console.log("Booking Payload:", payload);
+                  
+                  slotButton.textContent = "Booking...";
+                  slotButton.disabled = true;
                   
                   fetch("http://" + host + ":8000/request_multiple_slots", {
                       method: "POST",
@@ -302,9 +318,16 @@ function trackRequest() {
                         window.location.href = "main.html";
                       } else {
                         alert("Failed: " + d.message);
+                        slotButton.textContent = "Book Slot(s)";
+                        slotButton.disabled = false;
                       }
                     })
-                    .catch(err => console.error(err));
+                    .catch(err => {
+                        console.error(err);
+                        alert("Network error occurred.");
+                        slotButton.textContent = "Book Slot(s)";
+                        slotButton.disabled = false;
+                    });
                 });
               });
             });
