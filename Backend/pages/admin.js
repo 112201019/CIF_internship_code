@@ -451,9 +451,58 @@ async function handleAdd(event, section) {
 async function editItem(section, item) {
     singularSection = section.endsWith('s') ? section.slice(0, -1) : section;
     const contentArea = document.getElementById('contentArea');
+    
+    // --- 1. DYNAMIC DATA FETCHING ---
+    let departments = [];
+    let staffList = [];
+    let facultyList = [];
+    let currentReqs = []; // NEW: To hold our pricing data
+
+    const token = getCookie("session_token") || getCookie();
+
+    if (['student', 'faculty', 'staff'].includes(section)) {
+        try {
+            const response = await fetch("http://" + host + ":8000/departments", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token })
+            });
+            const data = await response.json();
+            if (data.message && Array.isArray(data.message)) departments = data.message;
+        } catch (error) { console.error("Error fetching departments:", error); }
+    }
+
+    if (section === 'equipment') {
+        try {
+            // Fetch Staff
+            const resStaff = await fetch("http://" + host + ":8000/show_all_staff", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token })
+            });
+            const dataStaff = await resStaff.json();
+            if(dataStaff.message && Array.isArray(dataStaff.message)) staffList = dataStaff.message;
+
+            // Fetch Faculty
+            const resFac = await fetch("http://" + host + ":8000/show_all_faculty", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token })
+            });
+            const dataFac = await resFac.json();
+            if(dataFac.message && Array.isArray(dataFac.message)) facultyList = dataFac.message;
+
+            // NEW: Fetch Current Prices/Requirements
+            const resReq = await fetch("http://" + host + ":8000/get_equipment_requirements", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, ID: item.equipment_id })
+            });
+            const dataReq = await resReq.json();
+            if(dataReq.message && dataReq.message.requirements) {
+                currentReqs = dataReq.message.requirements;
+            }
+        } catch (error) {
+            console.error("Error fetching equipment details:", error);
+        }
+    }
+    // ------------------------------------------------
+
     const fields = {
         student: [
-            {id: 'student_id', label: 'Student ID', readonly: true}, // <-- ADDED THIS
+            {id: 'student_id', label: 'Student ID', readonly: true},
             {id: 'student_name', label: 'Name'},
             {id: 'super_visor_id', label: 'Supervisor ID'},
             {id: 'mail_id', label: 'Mail ID'},
@@ -461,20 +510,21 @@ async function editItem(section, item) {
             {id: 'password', label: 'Password', type: 'password', readonly: true}
         ],
         faculty: [
-            {id: 'faculty_id', label: 'Faculty ID', readonly: true}, // <-- ADDED THIS
+            {id: 'faculty_id', label: 'Faculty ID', readonly: true},
             {id: 'faculty_name', label: 'Name'},
             {id: 'mail_id', label: 'Mail ID'},
             {id: 'department', label: 'Department'},
             {id: 'password', label: 'Password', type: 'password', readonly: true}
         ],
         staff: [
-            {id: 'staff_id', label: 'Staff ID', readonly: true}, // <-- ADDED THIS
+            {id: 'staff_id', label: 'Staff ID', readonly: true},
             {id: 'staff_name', label: 'Name'},
             {id: 'mail_id', label: 'Mail ID'},
             {id: 'department', label: 'Department'},
             {id: 'password', label: 'Password', type: 'password', readonly: true}
         ],
         equipment: [
+            {id: 'equipment_id', label: 'Equipment ID', readonly: true},
             {id: 'equipment_name', label: 'Name'},
             {id: 'location', label: 'Location'},
             {id: 'staff_incharge_id', label: 'Staff In-charge'},
@@ -485,36 +535,81 @@ async function editItem(section, item) {
     let html = `
         <div class="form-container">
             <h2>Edit ${section.charAt(0).toUpperCase() + section.slice(1)}</h2>
-            <p class="note">* Leave fields empty to keep current values</p>
+            <p class="note">* Leave fields empty to keep current values. IDs and Passwords cannot be edited here.</p>
             <form id="editForm" onsubmit="handleEdit(event, '${section}', '${item[`${singularSection}_id`]}')">
     `;
 
+    // --- 2. DYNAMIC FIELD RENDERER ---
     fields[section].forEach(field => {
-        // Apply styling if readonly
         const isReadonly = field.readonly ? 'readonly' : '';
         const style = field.readonly ? 'background-color: #e9ecef; cursor: not-allowed; color: #6c757d; border: 1px solid #ccc;' : '';
-        
-        // Remove 'name' attribute from readonly fields so they are NOT submitted in formData
         const nameAttr = field.readonly ? '' : `name="${field.id}"`;
-        
-        // Obfuscate password visually
         const value = (field.type === 'password' && field.readonly) ? '********' : (item[field.id] || '');
-        // -----------------------------
 
-        html += `
-            <div class="form-group">
-                <label for="${field.id}">${field.label}:</label>
-                <input 
-                    type="${field.type || 'text'}" 
-                    id="${field.id}" 
-                    ${nameAttr}        value="${value}"   ${isReadonly}      style="${style}"   >
-            </div>
-        `;
+        html += `<div class="form-group"><label for="${field.id}">${field.label}:</label>`;
+
+        if (field.id === 'department' && departments.length > 0) {
+            html += `<select id="${field.id}" ${nameAttr} style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size: 14px;">`;
+            html += `<option value="">-- Keep Current (${value}) --</option>`; 
+            departments.forEach(dept => {
+                const isSelected = (value === dept.department_id || value === dept.department_name) ? 'selected' : '';
+                html += `<option value="${dept.department_id}" ${isSelected}>${dept.department_name} (${dept.department_id})</option>`;
+            });
+            html += `</select>`;
+        } 
+        else if (field.id === 'staff_incharge_id' && staffList.length > 0) {
+            html += `<select id="${field.id}" ${nameAttr} style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size: 14px;">`;
+            html += `<option value="">-- Keep Current (${value}) --</option>`; 
+            staffList.forEach(s => {
+                const isSelected = (value === s.staff_id) ? 'selected' : '';
+                html += `<option value="${s.staff_id}" ${isSelected}>${s.staff_name} (${s.staff_id})</option>`;
+            });
+            html += `</select>`;
+        }
+        else if (field.id === 'faculty_incharge_id' && facultyList.length > 0) {
+            html += `<select id="${field.id}" ${nameAttr} style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size: 14px;">`;
+            html += `<option value="">-- Keep Current (${value}) --</option>`; 
+            facultyList.forEach(f => {
+                const isSelected = (value === f.faculty_id) ? 'selected' : '';
+                html += `<option value="${f.faculty_id}" ${isSelected}>${f.faculty_name} (${f.faculty_id})</option>`;
+            });
+            html += `</select>`;
+        }
+        else {
+            html += `<input type="${field.type || 'text'}" id="${field.id}" ${nameAttr} value="${value}" ${isReadonly} style="${style}; width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size: 14px; box-sizing: border-box;">`;
+        }
+        html += `</div>`;
     });
 
+    // --- 3. PRICING RENDERER (NEW) ---
+    if (section === 'equipment' && currentReqs.length > 0) {
+        html += `<div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #eee;">
+            <h3 style="margin-bottom: 15px; color: #2c3e50; font-size: 16px;">Update Equipment Pricing</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Note: You can update the prices below, but cannot add or remove feature names in edit mode.</p>
+        `;
+        
+        currentReqs.forEach(req => {
+            let badgeColor = req.type === 'fixed' ? '#3498db' : '#e67e22';
+            let safeName = req.name.replace(/"/g, '&quot;'); // Escape quotes just in case
+            
+            html += `
+            <div style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center;">
+                <div style="flex: 2; position: relative;">
+                    <input type="text" value="${safeName}" readonly style="width: 100%; background-color: #e9ecef; border: 1px solid #ccc; padding: 10px; border-radius: 4px; color: #555; cursor: not-allowed; font-weight: 500;">
+                    <span style="position:absolute; right:10px; top:12px; font-size:10px; background:${badgeColor}; color:white; padding:2px 6px; border-radius:10px;">${req.type}</span>
+                </div>
+                <div style="display:flex; align-items: center; flex: 1;">
+                    <span style="padding: 9px 12px; background: #eee; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; font-weight:bold;">₹</span>
+                    <input type="number" name="cost_update_${safeName}" value="${req.cost}" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 0 4px 4px 0;">
+                </div>
+            </div>`;
+        });
+        html += `</div>`;
+    }
+
     html += `
-            <button type="submit">Save Changes</button>
-            <button type="button" onclick="cancelEdit()">Cancel</button>
+            <button type="submit" style="margin-right: 10px;">Save Changes</button>
+            <button type="button" onclick="cancelEdit()" style="background: #6c757d;">Cancel</button>
         </form>
         </div>
     `;
@@ -524,33 +619,38 @@ async function editItem(section, item) {
 
 async function handleEdit(event, section, id) {
     event.preventDefault();
-    if (!id) {
-        displayError('Invalid ID');
-        return;
-    }
+    if (!id) { displayError('Invalid ID'); return; }
 
-    const token = getCookie()
+    const token = getCookie("session_token") || getCookie();
     const formData = new FormData(event.target);
     const updates = {};
+    const cost_updates = {}; // NEW: Hold our price updates
     
     for (let [key, value] of formData.entries()) {
         if (value.trim()) {
-            updates[key] = value.trim();
+            // Identify if this is a standard update or a price update
+            if (key.startsWith('cost_update_')) {
+                const reqName = key.replace('cost_update_', '');
+                cost_updates[reqName] = parseInt(value.trim());
+            } else {
+                updates[key] = value.trim();
+            }
         }
     }
 
     try {
+        const payload = {
+            token,
+            user_type: section,
+            user_id: id,
+            updates: updates,
+            cost_updates: Object.keys(cost_updates).length > 0 ? cost_updates : null
+        };
+
         const response = await fetch('http://'+host+':8000/admin/update_user', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                token,
-                user_type: section,
-                user_id: id,
-                updates: updates
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();

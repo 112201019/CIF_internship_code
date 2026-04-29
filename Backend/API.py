@@ -521,7 +521,6 @@ async def search_users(search_data: SearchQuery):
     
     # Add UpdateUser model to BaseModels.py first
 from BaseModels import UpdateUser
-
 @app.post("/admin/update_user")
 async def update_user(update_data: UpdateUser):
     try:
@@ -529,18 +528,23 @@ async def update_user(update_data: UpdateUser):
             return {"message": "Unauthorized"}
         
         db = open_connection(update_data.token)
-        print(f"Update data: {update_data.updates}")
         result = database_handler.update_user(
             db,
             update_data.user_type,
             update_data.user_id,
             update_data.updates
         )
+        
+        # --- NEW: Update Costs if editing equipment ---
+        if update_data.user_type == 'equipment' and update_data.cost_updates:
+            database_handler.update_equipment_costs(db, update_data.user_id, update_data.cost_updates)
+        # --------------------------------------------
+
+        db = None
         return {"message": "success"}
     except Exception as err:
         print(f"Update error: {err}")
-        return {"message": str(err)}
-    
+        return {"message": str(err)}   
     
 # Import the new model at the top of API.py
 from BaseModels import LoginCredentials, Token, AddProjectModel

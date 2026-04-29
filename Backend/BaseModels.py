@@ -65,11 +65,14 @@ class SearchQuery(BaseModel):
     user_type: str
     query: str
 
+from typing import Optional
+
 class UpdateUser(BaseModel):
     token: str
     user_type: str
     user_id: str
     updates: dict
+    cost_updates: Optional[dict] = None 
     
 class InsertSlotRequest(BaseModel):
     token: str

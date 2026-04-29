@@ -997,3 +997,17 @@ def add_department(db: PostgresqlDB, department_id: str, department_name: str):
     VALUES ('{department_id}', '{department_name}');
     """
     db.execute_ddl_and_dml_commands(query)
+
+def update_equipment_costs(db: PostgresqlDB, equipment_id: str, cost_updates: dict):
+    """Updates the costs of existing equipment requirements."""
+    for req_name, new_cost in cost_updates.items():
+        query = """
+            UPDATE equipment_requirements 
+            SET cost = :new_cost 
+            WHERE requirement_name = :req_name AND equipment_id = :eq_id
+        """
+        db.execute_ddl_and_dml_commands(query, values={
+            "new_cost": new_cost,
+            "req_name": req_name,
+            "eq_id": equipment_id
+        })
