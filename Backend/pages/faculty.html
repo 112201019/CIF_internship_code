@@ -3,59 +3,121 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CIF Faculty Portal</title>
+  
   <script src="script.js"></script>
   
   <style>
-    /* --- GLOBAL STYLES --- */
-    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; }
-    h1, h2, h3 { color: #2c3e50; margin-top: 0; }
+    /* --- GLOBAL RESET & FONTS --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background-color: #f0f2f5; 
+        color: #333; 
+        height: 100vh; 
+        display: flex; 
+        flex-direction: column; 
+    }
     
-    /* --- NAVBAR --- */
-    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: #3498db; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    /* --- NAVBAR (Blue Theme for Faculty) --- */
+    .navbar { 
+        background-color: #2980b9; 
+        color: white; 
+        padding: 0 2rem; 
+        height: 60px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        flex-shrink: 0; 
+    }
+    .logo { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
     .user-menu { position: relative; cursor: pointer; font-weight: 600; }
     .user-menu:hover .dropdown-content { display: block; }
-    .current-user { margin: 0; font-size: 16px; }
+    .current-user { font-size: 16px; margin: 0; font-weight: 600; }
     .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #fff; min-width: 150px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; z-index: 100; }
     .dropdown-content button { width: 100%; padding: 12px 16px; text-align: left; border: none; background: none; cursor: pointer; font-size: 14px; color: #333; transition: background 0.2s; }
     .dropdown-content button:hover { background-color: #f1f1f1; }
 
-    /* --- LAYOUT --- */
-    .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+    /* --- MAIN LAYOUT --- */
+    .container { 
+        display: flex; 
+        flex: 1; 
+        overflow: hidden;
+    }
     
-    /* Grid for 2 rows of 2 cards each */
-    .grid-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 30px; margin-bottom: 40px; }
+    /* --- SIDEBAR --- */
+    .sidebar { 
+        width: 260px; 
+        background: white; 
+        border-right: 1px solid #e0e0e0; 
+        padding: 1.5rem; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 10px; 
+        flex-shrink: 0; 
+    }
+    .menu-btn { 
+        width: 100%; 
+        padding: 12px 15px; 
+        text-align: left; 
+        background: none; 
+        border: none; 
+        border-radius: 6px; 
+        cursor: pointer; 
+        color: #555; 
+        font-size: 15px; 
+        font-weight: 500; 
+        transition: all 0.2s; 
+    }
+    .menu-btn:hover { background-color: #eaf2f8; color: #2980b9; }
+    .menu-btn.active { 
+        background-color: #2980b9; 
+        color: white; 
+        font-weight: 600; 
+        box-shadow: 0 2px 5px rgba(41, 128, 185, 0.3); 
+    }
+    .divider { border: 0; border-top: 1px solid #eee; margin: 5px 0; }
 
-    /* --- CARDS --- */
-    .card { background: #fff; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; }
-    .card h3 { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
-    .card p { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
+    /* --- CONTENT AREA --- */
+    .main-content { 
+        flex: 1; 
+        padding: 2rem; 
+        overflow-y: auto;
+    }
+
+    /* --- FORMS & CONTAINERS --- */
+    .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; }
+    .form-container h2 { margin-bottom: 5px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
     
     /* --- BUTTONS --- */
-    .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
-    .btn:hover { opacity: 0.9; }
-    .btn-primary { background-color: #2980b9; color: white; }
-    .btn-success { background-color: #27ae60; color: white; }
-    .btn-info { background-color: #16a085; color: white; }
-    .btn-warning { background-color: #f39c12; color: white; }
-    .btn-block { width: 100%; display: block; margin-bottom: 10px; }
-
-    /* --- REQUEST ITEMS --- */
-    .request-list { flex: 1; max-height: 500px; overflow-y: auto; padding-right: 5px; }
+    .action-btn { 
+        background: #27ae60; 
+        color: white; 
+        border: none; 
+        padding: 10px 20px; 
+        border-radius: 4px; 
+        cursor: pointer; 
+        font-weight: 600; 
+        transition: 0.2s;
+    }
+    .action-btn:hover { opacity: 0.9; }
     
-    /* --- MODAL --- */
+    .note { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
+
+    /* --- REQUEST ITEMS (Imported from old CSS) --- */
+    .request-list { max-height: 600px; overflow-y: auto; padding-right: 5px; }
+    .request-item { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; margin-bottom: 15px; position: relative; }
+    
+    /* Modals */
     .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-    .modal-content { background-color: #fff; margin: 5% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .modal-content { background-color: #fff; margin: 5% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; }
     .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 20px; }
     .close-button:hover { color: #000; }
-    
-    /* --- FORM ELEMENTS --- */
-    label { font-weight: 600; display: block; margin-bottom: 5px; color: #555; font-size: 0.9rem; }
-    input, textarea, select { width: 95%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
-    input[readonly] { background-color: #e9ecef; }
-    
-    #projectAddResult { text-align: center; padding: 10px; border-radius: 4px; }
   </style>
 </head>
 
@@ -72,54 +134,27 @@
   </nav>
 
   <div class="container">
-    
-    <div class="grid-row">
-      
-      <div class="card" style="border-top: 4px solid #2980b9;">
-        <h3>Requests For Supervisor Role</h3>
-        <p>Review equipment requests from your supervised students.</p>
-        <button class="btn btn-primary btn-block" onclick="showPendingRequestsSuper()">Show Requests</button>
-        <div id="showPendingSuper" class="request-list" style="margin-top:15px;"></div>
-      </div>
+    <aside class="sidebar">
+        <button class="menu-btn active" data-section="super_approvals" onclick="switchSection(this)">Supervisor Approvals</button>
+        <button class="menu-btn" data-section="incharge_approvals" onclick="switchSection(this)">Faculty Approvals</button>
+        <hr class="divider">
+        <button class="menu-btn" data-section="my_projects" onclick="switchSection(this)">My Projects</button>
+    </aside>
 
-      <div class="card" style="border-top: 4px solid #16a085;">
-        <h3>Requests For Faculty Incharge Role</h3>
-        <p>Approve or reject requests for equipment you oversee.</p>
-        <button class="btn btn-info btn-block" onclick="showPendingRequestsIn()">Show Requests</button>
-        <div id="showPendingIn" class="request-list" style="margin-top:15px;"></div>
-      </div>
-
-    </div>
-
-    <div class="grid-row">
-      
-      <div class="card" style="border-top: 4px solid #27ae60;">
-        <h3>Add New Project</h3>
-        <p>Submit a new project request for admin approval.</p>
-        <button id="openProjectModalBtn" class="btn btn-success btn-block" onclick="openProjectModal()">
-          + Add New Project
-        </button>
-        <div id="projectAddResult" style="margin-top: 15px;"></div>
-      </div>
-
-      <div class="card" style="border-top: 4px solid #f39c12;">
-        <h3>My Project Status</h3>
-        <p>View the approval status and details of your submitted projects.</p>
-        <button class="btn btn-warning btn-block" onclick="showMyProjects()">Refresh Projects</button>
-        <div id="myProjectsContainer" class="request-list" style="margin-top:15px;"></div>
-      </div>
-
-    </div>
+    <main class="main-content">
+        <div id="contentArea">
+            </div>
+    </main>
   </div>
 
   <div id="addProjectModal" class="modal" onclick="closeModalIfOutside(event)">
     <div class="modal-content">
       <span class="close-button" id="closeProjectModalBtn" onclick="closeProjectModal()">&times;</span>
-      <h3>Add New Project</h3>
+      <h3 style="margin-bottom: 20px; color:#2c3e50;">Add New Project</h3>
       <form id="addProjectForm" onsubmit="addNewProject(event)">
-        <div style="margin-bottom: 15px;">
+        <div class="form-group">
           <label for="project_type">Project Funding Type:</label>
-          <select id="project_type" name="project_type" required onchange="updateProjectId()" style="width: 95%; padding: 10px;">
+          <select id="project_type" name="project_type" required onchange="updateProjectId()">
             <option value="" disabled selected>-- Select a type --</option>
             <option value="department_fund">Department Fund</option>
             <option value="cif_credit">CIF Credit</option>
@@ -128,32 +163,30 @@
           </select>
         </div>
 
-        <div id="departmentContainer" style="margin-bottom: 15px; display: none;">
+        <div id="departmentContainer" class="form-group" style="display: none;">
           <label for="department_id">Select Department:</label>
-          <select id="department_id" name="department_id" onchange="updateProjectId()" style="width: 95%; padding: 10px;"></select>
+          <select id="department_id" name="department_id" onchange="updateProjectId()"></select>
         </div>
 
-        <div style="margin-bottom: 10px;">
+        <div class="form-group">
           <label for="project_title">Project Title:</label>
-          <input type="text" id="project_title" name="project_title" required style="width: 90%; padding: 10px;" />
+          <input type="text" id="project_title" name="project_title" required />
         </div>
 
-        <div style="margin-bottom: 15px;">
+        <div class="form-group">
           <label for="project_id">Project ID:</label>
-          <input type="text" id="project_id" name="project_id" readonly style="width: 90%; padding: 10px; background-color: #e9ecef;" />
+          <input type="text" id="project_id" name="project_id" readonly style="background-color: #e9ecef;" />
           <p id="projectIdPreview" style="font-family: monospace; color: #495057; margin: 5px 0 0 0; font-size: 0.9rem;"></p>
         </div>
 
-        <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px;">
-          Submit Project Request
-        </button>
+        <button type="submit" class="action-btn" style="width: 100%;">Submit Project Request</button>
       </form>
     </div>
   </div>
 
-  <div id="fundRequestModal" class="modal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
-    <div class="modal-content" style="background-color:#fff; margin:10% auto; padding:30px; border-radius:8px; width:90%; max-width:400px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-        <span onclick="closeFundModal()" style="position:absolute; right:20px; top:15px; font-size:24px; cursor:pointer;">&times;</span>
+  <div id="fundRequestModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <span onclick="closeFundModal()" class="close-button">&times;</span>
         
         <h2 style="color:#2c3e50; margin-top:0;">Request Extra Funds</h2>
         <p style="color:#666; font-size:14px; margin-bottom:15px;">Project ID: <strong id="fund_proj_id_display" style="color: #3498db;"></strong></p>
@@ -161,32 +194,103 @@
         <form id="fundRequestForm" onsubmit="submitFundRequest(event)">
             <input type="hidden" id="fund_proj_id">
             
-            <div class="form-group" style="margin-bottom:15px;">
-                <label style="display:block; font-weight:600; margin-bottom:5px; color:#555;">Requested Amount (₹)</label>
-                <input type="number" id="fund_amount" required min="1" placeholder="e.g. 5000" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+            <div class="form-group">
+                <label>Requested Amount (₹) <span style="color:#888; font-weight:normal;">(Optional - Admin will decide if blank)</span></label>
+                <input type="number" id="fund_amount" min="1" placeholder="Leave blank for admin allocation">
             </div>
             
-            <div class="form-group" style="margin-bottom:20px;">
-                <label style="display:block; font-weight:600; margin-bottom:5px; color:#555;">Reason for Request</label>
-                <textarea id="fund_reason" required rows="3" placeholder="Explain why extra funds are needed..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; resize:vertical;"></textarea>
+            <div class="form-group">
+                <label>Reason for Request</label>
+                <textarea id="fund_reason" required rows="3" placeholder="Explain why extra funds are needed..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; resize:vertical;"></textarea>
             </div>
             
-            <button type="submit" style="width:100%; background:#3498db; color:white; border:none; padding:12px; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;">
-                Submit Request
-            </button>
+            <button type="submit" class="action-btn" style="width: 100%; background:#3498db;">Submit Request</button>
         </form>
         <div id="fundRequestResult" style="margin-top:15px; font-weight:bold; text-align:center;"></div>
     </div>
   </div>
 
+  <div id="requestDetailsModal" class="modal" onclick="closeModalIfOutside(event)">
+    <div class="modal-content" style="max-width: 650px; padding: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+      
+      <div style="background: #2c3e50; color: white; padding: 20px; position: relative;">
+        <span onclick="closeRequestModal()" style="position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #ecf0f1; line-height: 20px;">&times;</span>
+        <h2 style="margin: 0; font-size: 20px; border:none; padding:0; color:white;">Request Details</h2>
+      </div>
+      
+      <div id="requestModalBody" style="padding: 25px; max-height: 60vh; overflow-y: auto; font-size: 14px; color: #333; line-height: 1.6;">
+        </div>
+      
+      <div id="requestModalActions" style="padding: 20px 25px; background: #f8f9fa; border-top: 1px solid #eee; display: flex; gap: 15px;">
+        </div>
+      
+    </div>
+  </div>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const token = getCookie();
+      const token = getCookie("session_token") || getCookie();
       if (!token) {
         window.location.href = "login.html";
+        return;
       }
-      show_current_user();
+      
+      if (typeof show_current_user === "function") show_current_user();
+
+      // Automatically load the first section (Supervisor Approvals)
+      const defaultBtn = document.querySelector('.menu-btn[data-section="super_approvals"]');
+      if (defaultBtn) switchSection(defaultBtn);
     });
+
+    // ==========================================
+    // SIDEBAR ROUTER LOGIC
+    // ==========================================
+    function switchSection(button) {
+        // Handle active button state
+        document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        const section = button.getAttribute('data-section');
+        const contentArea = document.getElementById('contentArea');
+
+        if (section === 'super_approvals') {
+            contentArea.innerHTML = `
+                <div class="form-container" style="max-width: 100%;">
+                    <h2 style="border-bottom-color: #2980b9;">Supervisor Approvals</h2>
+                    <p class="note">Review equipment requests from your supervised students.</p>
+                    <button class="action-btn" style="background:#2980b9; margin-bottom: 15px;" onclick="showPendingRequestsSuper()">Refresh Requests</button>
+                    <div id="showPendingSuper" class="request-list"></div>
+                </div>
+            `;
+            if (typeof showPendingRequestsSuper === "function") showPendingRequestsSuper();
+        } 
+        else if (section === 'incharge_approvals') {
+            contentArea.innerHTML = `
+                <div class="form-container" style="max-width: 100%;">
+                    <h2 style="border-bottom-color: #16a085;">Faculty In-Charge Approvals</h2>
+                    <p class="note">Approve or reject requests for equipment you oversee.</p>
+                    <button class="action-btn" style="background:#16a085; margin-bottom: 15px;" onclick="showPendingRequestsIn()">Refresh Requests</button>
+                    <div id="showPendingIn" class="request-list"></div>
+                </div>
+            `;
+            if (typeof showPendingRequestsIn === "function") showPendingRequestsIn();
+        }
+        else if (section === 'my_projects') {
+            contentArea.innerHTML = `
+                <div class="form-container" style="max-width: 100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; margin-bottom: 10px; padding-bottom: 10px;">
+                        <h2 style="border:none; margin:0; padding:0; color:#2c3e50;">My Projects</h2>
+                        <button class="action-btn" style="background:#27ae60;" onclick="openProjectModal()">+ Add New Project</button>
+                    </div>
+                    <p class="note" style="margin-bottom: 10px;">View the approval status and details of your submitted projects.</p>
+                    
+                    <div id="projectAddResult" style="margin-bottom: 15px; font-weight:bold; text-align:center;"></div>
+                    
+                    <div id="myProjectsContainer" class="request-list"></div>
+                </div>
+            `;
+            if (typeof showMyProjects === "function") showMyProjects();
+        }
+    }
   </script>
 
 </body>

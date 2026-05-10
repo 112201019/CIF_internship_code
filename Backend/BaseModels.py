@@ -135,13 +135,14 @@ class AddDepartmentModel(BaseModel):
 class ExtraFundModel(BaseModel):
     token: str
     project_id: str
-    requested_amount: int
+    requested_amount: Optional[int] = None  # <-- Made optional
     reason: str
 
 class ApproveExtraFundModel(BaseModel):
     token: str
     req_id: int
     approved_amount: int
+    new_expiry_date: str  # <-- New requirement for admin
     
 class RejectExtraFundModel(BaseModel):
     token: str

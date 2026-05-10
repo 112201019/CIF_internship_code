@@ -1006,9 +1006,10 @@ async def approve_ext_fund(data: ApproveExtraFundModel):
     if not is_admin(data.token): return {"message": "Unauthorized"}
     try:
         db = open_connection(data.token)
-        database_handler.approve_extra_fund(db, data.req_id, data.approved_amount)
+        # --- NEW: Pass the new_expiry_date here ---
+        database_handler.approve_extra_fund(db, data.req_id, data.approved_amount, data.new_expiry_date)
         db = None
-        return {"message": "Funds approved and added to project successfully!"}
+        return {"message": "Project renewed! Funds and new expiry date applied successfully."}
     except Exception as e:
         return {"message": f"ERROR: {str(e)}"}
 

@@ -1035,22 +1035,28 @@ def get_pending_fund_requests(db: PostgresqlDB):
         })
     return result
 
-def approve_extra_fund(db: PostgresqlDB, req_id: int, approved_amount: int):
-    # 1. Approve the request
+def approve_extra_fund(db: PostgresqlDB, req_id: int, approved_amount: int, new_expiry_date: str):
+    # 1. Update the request status
     db.execute_ddl_and_dml_commands(
         "UPDATE extra_fund_request SET status = 'approved' WHERE req_id = :req_id", 
         {"req_id": req_id}
     )
-    # 2. Get the project ID
+    
+    # 2. Find the associated project ID
     proj = list(db.execute_dql_commands(f"SELECT project_id FROM extra_fund_request WHERE req_id = {req_id}"))
     if not proj: raise ValueError("Request not found")
-    pid = proj[0][0]
-    # 3. Safely add the money to the project's 'money' column
+    project_id = proj[0][0]
+    
+    # 3. Add money, update expiry date, and REACTIVATE the project if it was expired
     db.execute_ddl_and_dml_commands(
-        "UPDATE project SET money = COALESCE(money, 0) + :amount WHERE project_id = :pid",
-        {"amount": approved_amount, "pid": pid}
+        """UPDATE project 
+           SET money = COALESCE(money, 0) + :amount, 
+               expiry_date = :expiry, 
+               status = 'approved' 
+           WHERE project_id = :pid""",
+        {"amount": approved_amount, "pid": project_id, "expiry": new_expiry_date}
     )
-
+    
 def reject_extra_fund(db: PostgresqlDB, req_id: int):
     db.execute_ddl_and_dml_commands(
         "UPDATE extra_fund_request SET status = 'rejected' WHERE req_id = :req_id", 

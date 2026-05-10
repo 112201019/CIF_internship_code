@@ -1322,20 +1322,24 @@ async function showFundRequests() {
         });
         const data = await response.json();
 
-        let html = `<h2>Pending Extra Fund Requests</h2><table class="data-table"><thead><tr>
+        let html = `<h2>Pending Project Renewals & Fund Requests</h2><table class="data-table"><thead><tr>
             <th>Req ID</th><th>Project ID</th><th>Title</th><th>Requested Amount</th><th>Reason</th><th>Actions</th>
         </tr></thead><tbody>`;
 
         if (data.message && data.message.length > 0) {
             data.message.forEach(req => {
+                // --- NEW: Handle empty amounts visually ---
+                const amtDisplay = req.requested_amount ? `₹${req.requested_amount}` : '<span style="color:#7f8c8d; font-style:italic;">Not Specified</span>';
+                const safeAmount = req.requested_amount || ''; // Pass empty string to form if null
+                
                 html += `<tr>
                     <td><strong>#${req.req_id}</strong></td>
                     <td>${req.project_id}</td>
                     <td>${req.project_title}</td>
-                    <td style="color: #27ae60; font-weight: bold; font-size: 1.1em;">₹${req.requested_amount}</td>
+                    <td style="color: #27ae60; font-weight: bold; font-size: 1.1em;">${amtDisplay}</td>
                     <td style="max-width: 250px; word-wrap: break-word; font-size: 0.9em; color: #555;">${req.reason}</td>
                     <td class="actions">
-                        <button onclick="showFundApprovalForm(${req.req_id}, '${req.project_id}', ${req.requested_amount})" style="background-color: #27ae60;">Approve</button>
+                        <button onclick="showFundApprovalForm(${req.req_id}, '${req.project_id}', '${safeAmount}')" style="background-color: #27ae60;">Approve & Renew</button>
                         <button onclick="handleRejectFund(${req.req_id})" style="background-color: #e74c3c;">Reject</button>
                     </td>
                 </tr>`;
@@ -1352,18 +1356,26 @@ async function showFundRequests() {
 
 function showFundApprovalForm(reqId, projectId, requestedAmount) {
     const contentArea = document.getElementById('contentArea');
+    const displayRequested = requestedAmount ? `₹${requestedAmount}` : 'Not Specified';
+    
     contentArea.innerHTML = `
         <div class="form-container" style="max-width: 500px; border-top: 4px solid #27ae60;">
-            <h2>Approve Funds: ${projectId}</h2>
-            <p style="color: #444; margin-bottom: 20px; font-size: 1.1em;">Faculty requested: <strong style="color:#27ae60;">₹${requestedAmount}</strong></p>
+            <h2>Renew Project: ${projectId}</h2>
+            <p style="color: #444; margin-bottom: 20px; font-size: 1.1em;">Faculty requested: <strong style="color:#27ae60;">${displayRequested}</strong></p>
             
             <form onsubmit="handleApproveFund(event, ${reqId})">
                 <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="approved_amount" style="font-weight:bold;">Final Amount to Approve (₹):</label>
-                    <input type="number" id="approved_amount" value="${requestedAmount}" required min="1" style="width:100%; padding:10px; font-size:1.1em;">
-                    <small style="color:#888; display:block; margin-top:5px;">You can approve the exact requested amount, or modify it.</small>
+                    <label for="approved_amount" style="font-weight:bold;">Final Amount to Allocate (₹):</label>
+                    <input type="number" id="approved_amount" value="${requestedAmount}" required min="0" style="width:100%; padding:10px; font-size:1.1em;">
                 </div>
-                <button type="submit" style="background-color: #27ae60; padding: 10px 20px; border:none; color:white; border-radius:4px; font-weight:bold; cursor:pointer;">Confirm Approval</button>
+                
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="new_expiry_date" style="font-weight:bold;">New Expiry Date:</label>
+                    <input type="date" id="new_expiry_date" required style="width:100%; padding:10px; font-size:1.1em;">
+                    <small style="color:#888; display:block; margin-top:5px;">This will officially revive the project if it was expired.</small>
+                </div>
+                
+                <button type="submit" style="background-color: #27ae60; padding: 10px 20px; border:none; color:white; border-radius:4px; font-weight:bold; cursor:pointer;">Confirm Renewal</button>
                 <button type="button" onclick="showFundRequests()" style="background-color: #95a5a6; padding: 10px 20px; border:none; color:white; border-radius:4px; font-weight:bold; cursor:pointer; margin-left:10px;">Cancel</button>
             </form>
         </div>
@@ -1374,6 +1386,7 @@ async function handleApproveFund(event, reqId) {
     event.preventDefault();
     const token = getCookie();
     const approvedAmount = document.getElementById('approved_amount').value;
+    const newExpiryDate = document.getElementById('new_expiry_date').value; // Get the date
     const btn = event.target.querySelector('button[type="submit"]');
 
     btn.innerHTML = "Processing...";
@@ -1383,7 +1396,12 @@ async function handleApproveFund(event, reqId) {
         const response = await fetch('http://'+host+':8000/admin/approve_extra_fund', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: token, req_id: reqId, approved_amount: parseInt(approvedAmount) })
+            body: JSON.stringify({ 
+                token: token, 
+                req_id: reqId, 
+                approved_amount: parseInt(approvedAmount),
+                new_expiry_date: newExpiryDate // Send the new date!
+            })
         });
         const result = await response.json();
 
@@ -1395,11 +1413,10 @@ async function handleApproveFund(event, reqId) {
         }
     } catch (error) {
         displayError(`Failed to approve funds: ${error.message}`);
-        btn.innerHTML = "Confirm Approval";
+        btn.innerHTML = "Confirm Renewal";
         btn.disabled = false;
     }
 }
-
 async function handleRejectFund(reqId) {
     if (!confirm('Are you sure you want to REJECT this extra fund request?')) return;
 

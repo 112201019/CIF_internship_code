@@ -1033,67 +1033,6 @@ async function handleAddSlot(event) {
     responseDiv.style.color = "red";
   }
 }
-// Add this entire function to the end of your script.js file
-// In script.js
-
-// REPLACE your existing addNewProject function with this one
-// async function addNewProject(event) {
-//   event.preventDefault();
-//   const resultDiv = document.getElementById("projectAddResult");
-//   resultDiv.textContent = "";
-
-//   // Get values from the form (money is no longer needed)
-//   const title = document.getElementById("project_title").value;
-//   const projectType = document.getElementById("project_type").value;
-//   const token = getCookie();
-
-//   if (!token) {
-//     resultDiv.textContent = "Authentication error. Please log in again.";
-//     resultDiv.style.color = "red";
-//     return;
-//   }
-
-//   try {
-//     // Prepare the data payload for the API (no money field)
-//     const projectData = {
-//       token,
-//       project_title: title,
-//       project_type: projectType,
-//     };
-
-//     // Call the updated API endpoint
-//     const response = await fetch("http://" + host + ":8000/add_project", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(projectData),
-//     });
-
-//     const result = await response.json();
-
-//     // Display the result message to the user
-//     resultDiv.textContent = result.message;
-//     if (result.message.includes("An error occurred")) {
-//       resultDiv.style.color = "red";
-//     } else {
-//       resultDiv.style.color = "green";
-//       event.target.reset(); // Reset the form on success
-//     }
-
-//   } catch (error) {
-//     console.error("Error adding project:", error);
-//     resultDiv.textContent = `A client-side error occurred: ${error.message}`;
-//     resultDiv.style.color = "red";
-//   }
-// }
-// Paste this entire block at the end of your script.js file
-
-// --- Logic for the new "Add Slot" form ---
-// Add this new function to your script.js file
-// Make sure to remove the old event listener block
-
-// Add this entire function to the end of your script.js file
-
-// In script.js, update the showMyProjects function
 
 async function showMyProjects() {
   const token = getCookie();
@@ -1150,7 +1089,7 @@ async function showMyProjects() {
 
       // Only show the Request Funds button if the project is actually approved!
       let actionBtn = "";
-      if (project.status === 'approved') {
+      if (project.status === 'approved' || project.status === 'expired') {
           actionBtn = `<button onclick="openFundModal('${project.project_id}')" style="background-color:#3498db; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">+ Request Funds</button>`;
       } else {
           actionBtn = `<span style="color:#aaa; font-size:12px; font-style:italic;">Unavailable</span>`;
@@ -1574,17 +1513,37 @@ function openFundModal(projectId) {
 function closeFundModal() {
     document.getElementById('fundRequestModal').style.display = 'none';
     document.getElementById('fundRequestForm').reset();
+    // --- NEW: Fully reset the button and message for the next time it opens ---
+    const btn = document.querySelector('#fundRequestForm button[type="submit"]');
+    if (btn) {
+        btn.innerHTML = "Submit Request";
+        btn.disabled = false;
+    }
+    const resDiv = document.getElementById('fundRequestResult');
+    if (resDiv) {
+        resDiv.textContent = "";
+    }
 }
 
 async function submitFundRequest(event) {
     event.preventDefault();
+    const btn = event.target.querySelector('button');
+    const resDiv = document.getElementById('fundRequestResult');
+    
+    btn.innerHTML = "Submitting..."; 
+    btn.disabled = true;
+    resDiv.textContent = "";
+
+    // Safely parse amount. If left blank, send null to the backend.
+    let parsedAmount = parseInt(document.getElementById('fund_amount').value);
+    if (isNaN(parsedAmount)) parsedAmount = null;
+
     const payload = {
-        token: getCookie("session_token") || getCookie(),
+        token: getCookie(),
         project_id: document.getElementById('fund_proj_id').value,
-        requested_amount: parseInt(document.getElementById('fund_amount').value),
+        requested_amount: parsedAmount,
         reason: document.getElementById('fund_reason').value
     };
-
     try {
         const res = await fetch("http://" + host + ":8000/faculty/request_extra_fund", {
             method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)
@@ -1597,5 +1556,38 @@ async function submitFundRequest(event) {
         if(data.message.includes("successfully")) setTimeout(closeFundModal, 1500);
     } catch(e) {
         document.getElementById('fundRequestResult').textContent = "Network Error";
+    }
+}
+
+// --- AUTO-LOAD STAFF EQUIPMENT DROPDOWN ---
+async function loadStaffEquipmentDropdown() {
+    const token = getCookie();
+    const dropdown = document.getElementById("equipmentId");
+    
+    // If we aren't on the staff page (or the dropdown doesn't exist), just ignore and return
+    if (!token || !dropdown) return;
+
+    try {
+        const response = await fetch("http://" + host + ":8000/staff/my_equipment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token })
+        });
+        const result = await response.json();
+        
+        if (result.message === "success" && result.data.length > 0) {
+            dropdown.innerHTML = '<option value="" disabled selected>-- Select Equipment --</option>';
+            result.data.forEach(eq => {
+                const option = document.createElement("option");
+                option.value = eq.equipment_id; // Submits the exact ID to the database
+                option.textContent = `${eq.equipment_name.toUpperCase()} (${eq.equipment_id})`; // Shows a clean readable name
+                dropdown.appendChild(option);
+            });
+        } else {
+            dropdown.innerHTML = '<option value="" disabled>No equipment assigned to you</option>';
+        }
+    } catch (error) {
+        console.error("Error loading equipment for dropdown:", error);
+        dropdown.innerHTML = '<option value="" disabled>Error connecting to server</option>';
     }
 }
