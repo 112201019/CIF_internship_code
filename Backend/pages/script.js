@@ -1311,13 +1311,13 @@ async function submitFundRequest(event) {
     }
 }
 
-// --- AUTO-LOAD STAFF EQUIPMENT DROPDOWN ---
-async function loadStaffEquipmentDropdown() {
+// --- AUTO-LOAD STAFF EQUIPMENT DROPDOWNS ---
+async function loadStaffEquipmentDropdowns() {
     const token = getCookie();
-    const dropdown = document.getElementById("equipmentId");
+    const addDropdown = document.getElementById("equipmentId");
+    const matrixDropdown = document.getElementById("matrixEquipmentId");
     
-    // If we aren't on the staff page (or the dropdown doesn't exist), just ignore and return
-    if (!token || !dropdown) return;
+    if (!token) return;
 
     try {
         const response = await fetch("http://" + host + ":8000/staff/my_equipment", {
@@ -1327,20 +1327,17 @@ async function loadStaffEquipmentDropdown() {
         });
         const result = await response.json();
         
-        if (result.message === "success" && result.data.length > 0) {
-            dropdown.innerHTML = '<option value="" disabled selected>-- Select Equipment --</option>';
-            result.data.forEach(eq => {
-                const option = document.createElement("option");
-                option.value = eq.equipment_id; // Submits the exact ID to the database
-                option.textContent = `${eq.equipment_name.toUpperCase()} (${eq.equipment_id})`; // Shows a clean readable name
-                dropdown.appendChild(option);
-            });
-        } else {
-            dropdown.innerHTML = '<option value="" disabled>No equipment assigned to you</option>';
-        }
+        const optionsHtml = (result.message === "success" && result.data.length > 0)
+            ? '<option value="" disabled selected>-- Select Equipment --</option>' + 
+              result.data.map(eq => `<option value="${eq.equipment_id}">${eq.equipment_name.toUpperCase()} (${eq.equipment_id})</option>`).join('')
+            : '<option value="" disabled>No equipment assigned to you</option>';
+
+        if (addDropdown) addDropdown.innerHTML = optionsHtml;
+        if (matrixDropdown) matrixDropdown.innerHTML = optionsHtml;
+        
     } catch (error) {
         console.error("Error loading equipment for dropdown:", error);
-        dropdown.innerHTML = '<option value="" disabled>Error connecting to server</option>';
+        if (addDropdown) addDropdown.innerHTML = '<option value="" disabled>Error connecting to server</option>';
     }
 }
 
@@ -1380,26 +1377,49 @@ function switchSectionStaff(button) {
         contentArea.innerHTML = `
             <div class="form-container" style="max-width: 100%;">
                 <h2 style="border-bottom-color: #27ae60;">Manage Equipment Slots</h2>
-                <p class="note">Add new availability slots for the equipment you are assigned to.</p>
-                <form id="addSlotForm" onsubmit="handleAddSlot(event)">
-                    <div class="form-group">
-                        <label for="equipmentId">Select Equipment:</label>
-                        <select id="equipmentId" required></select>
+                
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
+                    <div>
+                        <h3 style="color: #2c3e50; font-size: 16px; margin-bottom: 10px;">Add New Slots</h3>
+                        <p class="note" style="margin-bottom: 15px;">Create availability slots for your equipment.</p>
+                        <form id="addSlotForm" onsubmit="handleAddSlot(event)">
+                            <div class="form-group">
+                                <label for="equipmentId">Select Equipment:</label>
+                                <select id="equipmentId" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="startTime">Start Time:</label>
+                                <input type="datetime-local" id="startTime" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="endTime">End Time:</label>
+                                <input type="datetime-local" id="endTime" required>
+                            </div>
+                            <button type="submit" class="action-btn" style="width: 100%;">Add Slot(s)</button>
+                        </form>
+                        <div id="responseMessage" style="margin-top:15px; font-weight:bold; text-align:center;"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="startTime">Start Time:</label>
-                        <input type="datetime-local" id="startTime" required>
+
+                    <div style="border-left: 1px solid #eee; padding-left: 30px;">
+                        <h3 style="color: #8e44ad; font-size: 16px; margin-bottom: 10px;">Slot Availability Matrix</h3>
+                        <p class="note" style="margin-bottom: 15px;">View existing slots and their current booking status.</p>
+                        
+                        <div class="form-group">
+                            <label>Select Equipment to View Matrix:</label>
+                            <select id="matrixEquipmentId" onchange="loadSlotMatrix(this.value)"></select>
+                        </div>
+                        
+                        <div id="slotMatrixContainer" style="margin-top: 15px; max-height: 500px; overflow-y: auto; padding-right: 10px;">
+                            <div style="padding: 30px; text-align: center; background: #f8f9fa; border-radius: 8px; color: #7f8c8d;">
+                                Select an equipment from the dropdown to view its slot matrix.
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="endTime">End Time:</label>
-                        <input type="datetime-local" id="endTime" required>
-                    </div>
-                    <button type="submit" class="action-btn" style="width: 100%;">Add Slot(s)</button>
-                </form>
-                <div id="responseMessage" style="margin-top:15px; font-weight:bold; text-align:center;"></div>
+                </div>
             </div>
         `;
-        if (typeof loadStaffEquipmentDropdown === "function") loadStaffEquipmentDropdown();
+        // Load the dropdowns for both sides
+        if (typeof loadStaffEquipmentDropdowns === "function") loadStaffEquipmentDropdowns();
     }
 }
 
@@ -1505,4 +1525,89 @@ function openStudentModal(req) {
     actions.style.display = 'none';
     
     document.getElementById('requestDetailsModal').style.display = 'block';
+}
+
+// --- LOAD AND RENDER SLOT MATRIX ---
+async function loadSlotMatrix(equipmentId) {
+    if (!equipmentId) return;
+    
+    const container = document.getElementById("slotMatrixContainer");
+    container.innerHTML = `<div style="text-align: center; padding: 20px;"><span class="spinner" style="border-color: #8e44ad; border-bottom-color: transparent;"></span> Loading slots...</div>`;
+    
+    const token = getCookie();
+
+    try {
+        const res = await fetch("http://" + host + ":8000/staff/equipment_slots", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token, ID: equipmentId })
+        });
+        const data = await res.json();
+        
+        if (data.message !== "success") {
+            container.innerHTML = `<div style="color:#e74c3c; padding: 15px; background: #fadbd8; border-radius: 6px;">Error loading slots: ${data.details || 'Unknown error'}</div>`;
+            return;
+        }
+
+        if (!data.data || data.data.length === 0) {
+            container.innerHTML = `<div style="padding: 20px; text-align: center; background: #f8f9fa; border-radius: 8px; color: #7f8c8d;">No upcoming slots generated for this equipment yet.</div>`;
+            return;
+        }
+
+        // 1. Group the fetched slots by Date
+        const slotsByDate = {};
+        data.data.forEach(slot => {
+            const d = new Date(slot.slot_time);
+            
+            // Format strictly as YYYY-MM-DD for sorting logic, but readable string for UI
+            const dateKey = d.toDateString(); 
+            const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            if (!slotsByDate[dateKey]) slotsByDate[dateKey] = { dateObj: d, slots: [] };
+            slotsByDate[dateKey].slots.push({ ...slot, timeStr, fullDate: d });
+        });
+
+        // 2. Sort Dates chronologically
+        const sortedDates = Object.values(slotsByDate).sort((a, b) => a.dateObj - b.dateObj);
+
+        // 3. Render the Matrix
+        let html = `<div style="display: flex; flex-direction: column; gap: 15px;">`;
+        
+        sortedDates.forEach(dayGroup => {
+            const displayDate = dayGroup.dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+            
+            html += `
+                <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <h4 style="margin: 0 0 12px 0; color: #34495e; font-size: 15px; border-bottom: 2px solid #f1f2f6; padding-bottom: 8px;">
+                        <span style="color: #8e44ad;">🗓️</span> ${displayDate}
+                    </h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            `;
+            
+            // Sort times sequentially within the day
+            dayGroup.slots.sort((a, b) => a.fullDate - b.fullDate).forEach(s => {
+                const isFree = s.slot_status.toLowerCase() === 'free';
+                
+                // Colors: Green for Free, Red for Booked/Pending
+                const bgColor = isFree ? '#e8f8f5' : '#fadbd8';
+                const textColor = isFree ? '#117a65' : '#c0392b';
+                const borderColor = isFree ? '#a3e4d7' : '#f5b7b1';
+                
+                html += `
+                    <div style="background: ${bgColor}; color: ${textColor}; border: 1px solid ${borderColor}; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 90px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <span style="font-size: 14px; margin-bottom: 3px;">${s.timeStr}</span>
+                        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8;">${s.slot_status}</span>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>`;
+        });
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        
+    } catch (err) {
+        container.innerHTML = `<div style="color:#e74c3c; padding: 15px;">Network error connecting to the server.</div>`;
+    }
 }
