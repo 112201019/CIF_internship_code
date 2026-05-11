@@ -6,33 +6,14 @@
   <title>CIF Staff Portal</title>
   
   <script src="script.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   
   <style>
     /* --- GLOBAL RESET & FONTS --- */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        background-color: #f0f2f5; 
-        color: #333; 
-        height: 100vh; 
-        display: flex; 
-        flex-direction: column; 
-    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; }
     
-    /* --- NAVBAR (Orange Theme for Staff) --- */
-    .navbar { 
-        background-color: #e67e22; 
-        color: white; 
-        padding: 0 2rem; 
-        height: 60px; 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-        flex-shrink: 0; 
-    }
+    /* --- NAVBAR (Purple Theme for Staff) --- */
+    .navbar { background-color: #8e44ad; color: white; padding: 0 2rem; height: 60px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-shrink: 0; }
     .logo { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
     .user-menu { position: relative; cursor: pointer; font-weight: 600; }
     .user-menu:hover .dropdown-content { display: block; }
@@ -42,82 +23,37 @@
     .dropdown-content button:hover { background-color: #f1f1f1; }
 
     /* --- MAIN LAYOUT --- */
-    .container { 
-        display: flex; 
-        flex: 1; 
-        overflow: hidden;
-    }
+    .container { display: flex; flex: 1; overflow: hidden; }
     
     /* --- SIDEBAR --- */
-    .sidebar { 
-        width: 260px; 
-        background: white; 
-        border-right: 1px solid #e0e0e0; 
-        padding: 1.5rem; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 10px; 
-        flex-shrink: 0; 
-    }
-    .menu-btn { 
-        width: 100%; 
-        padding: 12px 15px; 
-        text-align: left; 
-        background: none; 
-        border: none; 
-        border-radius: 6px; 
-        cursor: pointer; 
-        color: #555; 
-        font-size: 15px; 
-        font-weight: 500; 
-        transition: all 0.2s; 
-    }
-    .menu-btn:hover { background-color: #fdf2e9; color: #d35400; }
-    .menu-btn.active { 
-        background-color: #d35400; 
-        color: white; 
-        font-weight: 600; 
-        box-shadow: 0 2px 5px rgba(211, 84, 0, 0.3); 
-    }
+    .sidebar { width: 260px; background: white; border-right: 1px solid #e0e0e0; padding: 1.5rem; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+    .menu-btn { width: 100%; padding: 12px 15px; text-align: left; background: none; border: none; border-radius: 6px; cursor: pointer; color: #555; font-size: 15px; font-weight: 500; transition: all 0.2s; }
+    .menu-btn:hover { background-color: #f5eef8; color: #8e44ad; }
+    .menu-btn.active { background-color: #8e44ad; color: white; font-weight: 600; box-shadow: 0 2px 5px rgba(142, 68, 173, 0.3); }
     .divider { border: 0; border-top: 1px solid #eee; margin: 5px 0; }
 
     /* --- CONTENT AREA --- */
-    .main-content { 
-        flex: 1; 
-        padding: 2rem; 
-        overflow-y: auto;
-    }
+    .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
 
     /* --- FORMS & CONTAINERS --- */
-    .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto; }
+    .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; }
     .form-container h2 { margin-bottom: 5px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
     .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
     
     /* --- BUTTONS --- */
-    .action-btn { 
-        background: #27ae60; 
-        color: white; 
-        border: none; 
-        padding: 10px 20px; 
-        border-radius: 4px; 
-        cursor: pointer; 
-        font-weight: 600; 
-        transition: 0.2s;
-    }
+    .action-btn { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; }
     .action-btn:hover { opacity: 0.9; }
-    
     .note { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
 
-    /* --- REQUEST ITEMS (Imported from old CSS) --- */
+    /* --- REQUEST ITEMS --- */
     .request-list { max-height: 600px; overflow-y: auto; padding-right: 5px; }
     .request-item { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; margin-bottom: 15px; position: relative; }
-    .req-header { display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; }
     
     /* Modals */
     .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-    .modal-content { background-color: #fff; margin: 5% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; }
+    .modal-content { background-color: #fff; margin: 5% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; }
   </style>
 </head>
 
@@ -135,228 +71,41 @@
 
   <div class="container">
     <aside class="sidebar">
-        <button class="menu-btn active" data-section="pending" onclick="switchSection(this)">Pending Approvals</button>
-        <button class="menu-btn" data-section="ongoing" onclick="switchSection(this)">Ongoing Experiments</button>
+        <button class="menu-btn active" data-section="staff_approvals" onclick="switchSectionStaff(this)">Staff Approvals</button>
         <hr class="divider">
-        <button class="menu-btn" data-section="create_slots" onclick="switchSection(this)">Create Slots</button>
-        <button class="menu-btn" data-section="matrix" onclick="switchSection(this)">Slot Matrix</button>
+        <button class="menu-btn" data-section="ongoing_experiments" onclick="switchSectionStaff(this)">Ongoing Experiments</button>
+        <button class="menu-btn" data-section="manage_slots" onclick="switchSectionStaff(this)">Manage Slots</button>
     </aside>
 
     <main class="main-content">
-        <div id="contentArea">
-            </div>
+        <div id="contentArea"></div>
     </main>
   </div>
 
-  <script>
-    host='localhost';
+  <div id="requestDetailsModal" class="modal" onclick="closeModalIfOutside(event)">
+    <div class="modal-content" style="max-width: 650px; padding: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+      <div style="background: #2c3e50; color: white; padding: 20px; position: relative;">
+        <span onclick="closeRequestModal()" style="position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #ecf0f1; line-height: 20px;">&times;</span>
+        <h2 style="margin: 0; font-size: 20px; border:none; padding:0; color:white;">Request Details</h2>
+      </div>
+      <div id="requestModalBody" style="padding: 25px; max-height: 60vh; overflow-y: auto; font-size: 14px; color: #333; line-height: 1.6;"></div>
+      <div id="requestModalActions" style="padding: 20px 25px; background: #f8f9fa; border-top: 1px solid #eee; display: flex; gap: 15px;"></div>
+    </div>
+  </div>
 
+  <script>
     document.addEventListener("DOMContentLoaded", function () {
       const token = getCookie("session_token") || getCookie();
       if (!token) {
         window.location.href = "login.html";
         return;
       }
-      show_current_user();
+      if (typeof show_current_user === "function") show_current_user();
 
-      // Automatically load the first section (Pending Approvals)
-      const defaultBtn = document.querySelector('.menu-btn[data-section="pending"]');
-      if (defaultBtn) switchSection(defaultBtn);
+      // Automatically load the first section
+      const defaultBtn = document.querySelector('.menu-btn[data-section="staff_approvals"]');
+      if (defaultBtn) switchSectionStaff(defaultBtn);
     });
-
-    // ==========================================
-    // SIDEBAR ROUTER LOGIC
-    // ==========================================
-    function switchSection(button) {
-        // Handle active button state
-        document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        
-        const section = button.getAttribute('data-section');
-        const contentArea = document.getElementById('contentArea');
-
-        if (section === 'pending') {
-            contentArea.innerHTML = `
-                <div class="form-container" style="max-width: 100%;">
-                    <h2 style="border-bottom-color: #d35400;">Pending Approvals</h2>
-                    <p class="note">Review and finalize equipment requests from students.</p>
-                    <button class="action-btn" style="background:#d35400; margin-bottom: 15px;" onclick="showPendingRequestsStaff()">Refresh Requests</button>
-                    <div id="showPendingStaff" class="request-list"></div>
-                </div>
-            `;
-            showPendingRequestsStaff(); // Calls script.js function
-        } 
-        else if (section === 'ongoing') {
-            contentArea.innerHTML = `
-                <div class="form-container" style="max-width: 100%;">
-                    <h2 style="border-bottom-color: #9b59b6;">Ongoing Experiments</h2>
-                    <p class="note">Mark experiments as completed. Add extra charges only if applicable.</p>
-                    <button class="action-btn" style="background:#9b59b6; margin-bottom: 15px;" onclick="loadOngoingExperiments()">Refresh List</button>
-                    <div id="ongoingExperimentsList" class="request-list"></div>
-                </div>
-            `;
-            loadOngoingExperiments(); // Calls script.js function
-        }
-        else if (section === 'create_slots') {
-            contentArea.innerHTML = `
-                <div class="form-container" style="max-width: 600px;">
-                    <h2 style="border-bottom-color: #27ae60;">Create Equipment Slots</h2>
-                    <p class="note">Generate new booking slots for machines assigned to you.</p>
-                    
-                    <form id="insertSlotForm" onsubmit="handleAddSlot(event)">
-                        <div class="form-group">
-                          <label>Equipment</label>
-                          <select id="equipmentId" required style="background-color: white;">
-                              <option value="" disabled selected>Loading equipment...</option>
-                          </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Start Date & Time</label>
-                            <input type="datetime-local" id="startTime" required />
-                        </div>
-                        <div class="form-group">
-                            <label>End Date & Time</label>
-                            <input type="datetime-local" id="endTime" required />
-                        </div>
-                        <button type="submit" class="action-btn" style="width: 100%;">Generate Slots</button>
-                    </form>
-                    <div id="responseMessage" style="margin-top: 15px; text-align:center; font-weight:bold; font-size:0.9rem;"></div>
-                </div>
-            `;
-            
-            // Re-fetch the dropdown options dynamically
-            loadStaffEquipment(); 
-            
-            // Bind Flatpickr explicitly since we just injected HTML
-            flatpickr("#startTime", { enableTime: true, dateFormat: "Y-m-d H:i", minDate: "today", time_24hr: true });
-            flatpickr("#endTime", { enableTime: true, dateFormat: "Y-m-d H:i", minDate: "today", time_24hr: true });
-        }
-        else if (section === 'matrix') {
-            contentArea.innerHTML = `
-                <div class="form-container" style="max-width: 100%;">
-                    <h2 style="border-bottom-color: #3498db;">Equipment Slot Matrix</h2>
-                    <p class="note">Select your equipment to view the live status of all generated slots.</p>
-                    
-                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width: 500px;">
-                        <select id="staffEquipmentSelect" style="flex:1; padding:10px; border-radius:4px; border:1px solid #ddd;"></select>
-                        <button class="action-btn" style="background:#3498db;" onclick="loadEquipmentSlots()">View Slots</button>
-                    </div>
-                    
-                    <div id="slotMatrixContainer" style="display:flex; flex-wrap:wrap; gap:10px; max-height:400px; overflow-y:auto; padding:15px; background:#f8f9fa; border:1px solid #ddd; border-radius:6px;">
-                        <p style="color:#777; width:100%; text-align:center; font-style:italic;">Select an equipment and click View Slots.</p>
-                    </div>
-                    
-                    <div style="margin-top:20px; display:flex; gap:20px; font-size:13px; font-weight:bold; justify-content:center; padding-top: 15px; border-top: 1px solid #eee;">
-                        <span style="display:flex; align-items:center; gap:5px;"><div style="width:14px;height:14px;background:#2ecc71; border-radius:3px;"></div> Free</span>
-                        <span style="display:flex; align-items:center; gap:5px;"><div style="width:14px;height:14px;background:#f39c12; border-radius:3px;"></div> Pending</span>
-                        <span style="display:flex; align-items:center; gap:5px;"><div style="width:14px;height:14px;background:#e74c3c; border-radius:3px;"></div> Booked</span>
-                    </div>
-                </div>
-            `;
-            loadStaffEquipment(); // Re-fetch the dropdown options dynamically
-        }
-    }
-
-    // ==========================================
-    // INLINE STAFF FUNCTIONS
-    // ==========================================
-
-    async function loadStaffEquipment() {
-        const token = getCookie();
-        try {
-            const res = await fetch("http://" + host + ":8000/staff/my_equipment", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token })
-            });
-            const data = await res.json();
-            
-            const matrixSelect = document.getElementById("staffEquipmentSelect");
-            const slotCreateSelect = document.getElementById("equipmentId");
-            
-            if (matrixSelect) matrixSelect.innerHTML = "<option value='' disabled selected>-- Select Equipment --</option>";
-            if (slotCreateSelect) slotCreateSelect.innerHTML = "<option value='' disabled selected>-- Select Equipment --</option>";
-
-            if (data.message === "success" && data.data) {
-                data.data.forEach(eq => {
-                    const optionHtml = `<option value="${eq.equipment_id}">${eq.equipment_name} (${eq.equipment_id})</option>`;
-                    if (matrixSelect) matrixSelect.innerHTML += optionHtml;
-                    if (slotCreateSelect) slotCreateSelect.innerHTML += optionHtml;
-                });
-            } else {
-                if (slotCreateSelect) slotCreateSelect.innerHTML = "<option value='' disabled>No assigned equipment</option>";
-            }
-        } catch (e) {
-            console.error("Error loading staff equipment", e);
-        }
-    }
-
-    async function loadEquipmentSlots() {
-        const token = getCookie();
-        const equipId = document.getElementById("staffEquipmentSelect").value;
-        const container = document.getElementById("slotMatrixContainer");
-        
-        if (!equipId) {
-            alert("Please select an equipment from the dropdown first.");
-            return;
-        }
-        
-        container.innerHTML = "<p style='width:100%; text-align:center;'>Loading slots...</p>";
-        
-        try {
-            const res = await fetch("http://" + host + ":8000/staff/equipment_slots", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: token, ID: equipId }) 
-            });
-            const data = await res.json();
-            
-            if (data.message === "success") {
-                container.innerHTML = "";
-                if (data.data.length === 0) {
-                    container.innerHTML = "<p style='width:100%; text-align:center; color:#777;'>No upcoming slots found for this equipment.</p>";
-                    return;
-                }
-                
-                data.data.forEach(slot => {
-                    const dateObj = new Date(slot.slot_time);
-                    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                    
-                    let bgColor = "#bdc3c7"; 
-                    let statusTxt = slot.slot_status.toLowerCase();
-                    if (statusTxt === "free") bgColor = "#2ecc71"; 
-                    else if (statusTxt === "pending") bgColor = "#f39c12"; 
-                    else bgColor = "#e74c3c"; 
-                    
-                    const slotDiv = document.createElement("div");
-                    slotDiv.style = `
-                        background-color: ${bgColor};
-                        color: white;
-                        padding: 12px;
-                        border-radius: 6px;
-                        text-align: center;
-                        min-width: 120px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        border: 1px solid rgba(0,0,0,0.1);
-                    `;
-                    slotDiv.innerHTML = `
-                        <strong style="font-size:0.95rem;">${dateStr}</strong>
-                        <span style="font-size:0.9rem; margin: 4px 0;">${timeStr}</span>
-                        <span style="font-size:0.75rem; text-transform:uppercase; font-weight:bold; letter-spacing:1px; background:rgba(0,0,0,0.2); padding:3px; border-radius:3px;">${statusTxt}</span>
-                    `;
-                    container.appendChild(slotDiv);
-                });
-            } else {
-                container.innerHTML = `<p style="color:red; width:100%; text-align:center;">Error: ${data.details}</p>`;
-            }
-        } catch(e) {
-            container.innerHTML = `<p style="color:red; width:100%; text-align:center;">Network Error occurred.</p>`;
-        }
-    }
   </script>
 </body>
 </html>

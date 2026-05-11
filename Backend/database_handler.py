@@ -261,17 +261,28 @@ def decide_by_staff_incharge(db: PostgresqlDB, request_id: int, decision: str):
 #         result.append(record)
 #     return result
 def show_requests_supervisor(db: PostgresqlDB):
+    # We use your secure DB function as the base, and JOIN to get names & IDs
     query = """
         SELECT sr.request_id, sr.equipment_name, sr.slot_time, sr.slot_id, 
                sr.request_data, sr.slot_count, sr.unit_time, sr.comment,
-               r.student_id, s.student_name, s.department, s.mail_id
+               r.student_id, s.student_name, s.department, s.mail_id,
+               r.proj_id AS project_id, sl.equipment_id
         FROM show_requests_supervisor() sr
         JOIN request r ON sr.request_id = r.request_id
         JOIN student s ON r.student_id = s.student_id
+        JOIN slot sl ON r.slot_id = sl.slot_id
     """
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment", "student_id", "student_name", "department", "mail_id"]
+    
+    # Matching the exact fields the frontend JS expects
+    fields = [
+        "request_id", "equipment_name", "slot_time", "slot_id", 
+        "request_data", "slot_count", "unit_time", "comment", 
+        "student_id", "student_name", "department", "mail_id", 
+        "project_id", "equipment_id"
+    ]
+    
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -280,36 +291,57 @@ def show_requests_supervisor(db: PostgresqlDB):
     return result
 
 def show_requests_faculty_incharge(db: PostgresqlDB):
+    # Same here, but we also join the 'faculty' table to get the supervisor's actual name
     query = """
         SELECT sr.request_id, sr.equipment_name, sr.slot_time, sr.slot_id, 
                sr.request_data, sr.slot_count, sr.unit_time, sr.comment,
-               r.student_id, s.student_name, s.department, s.mail_id
+               r.student_id, s.student_name, s.department, s.mail_id,
+               r.proj_id AS project_id, sl.equipment_id,
+               f.faculty_name AS supervisor_name
         FROM show_requests_faculty_incharge() sr
         JOIN request r ON sr.request_id = r.request_id
         JOIN student s ON r.student_id = s.student_id
+        JOIN slot sl ON r.slot_id = sl.slot_id
+        JOIN faculty f ON s.super_visor_id = f.faculty_id
     """
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment", "student_id", "student_name", "department", "mail_id"]
+    
+    fields = [
+        "request_id", "equipment_name", "slot_time", "slot_id", 
+        "request_data", "slot_count", "unit_time", "comment", 
+        "student_id", "student_name", "department", "mail_id", 
+        "project_id", "equipment_id", "supervisor_name"
+    ]
+    
     for i in r:
         record = {}
         for j in range(len(i)):
             record[fields[j]] = i[j]
         result.append(record)
     return result
-
 def show_requests_staff_incharge(db: PostgresqlDB):
     query = """
         SELECT sr.request_id, sr.equipment_name, sr.slot_time, sr.slot_id, 
                sr.request_data, sr.slot_count, sr.unit_time, sr.comment,
-               r.student_id, s.student_name, s.department, s.mail_id
+               r.student_id, s.student_name, s.department, s.mail_id,
+               r.proj_id AS project_id, sl.equipment_id
         FROM show_requests_staff_incharge() sr
         JOIN request r ON sr.request_id = r.request_id
         JOIN student s ON r.student_id = s.student_id
+        JOIN slot sl ON r.slot_id = sl.slot_id
     """
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "equipment_name", "slot_time", "slot_id", "request_data", "slot_count", "unit_time", "comment", "student_id", "student_name", "department", "mail_id"]
+    
+    # We must explicitly add project_id and equipment_id here
+    fields = [
+        "request_id", "equipment_name", "slot_time", "slot_id", 
+        "request_data", "slot_count", "unit_time", "comment", 
+        "student_id", "student_name", "department", "mail_id",
+        "project_id", "equipment_id"
+    ]
+    
     for i in r:
         record = {}
         for j in range(len(i)):
@@ -388,18 +420,25 @@ def show_requests_student(db: PostgresqlDB):
     user = list(db.execute_dql_commands("select current_user"))[0][0]
     view = "request_" + user
     
-    # FIX: Define the record as 'approval_status' and then cast it to text (::text)
+    # Expanded query to grab everything needed for the modal
     query = f"""
-        SELECT v.request_id, v.slot_id, e.equipment_name, v.proj_id, s.slot_time, 
-               (SELECT status::text FROM check_status(v.request_id) AS cs(status approval_status) LIMIT 1) as status
+        SELECT v.request_id, v.slot_id, e.equipment_name, v.proj_id AS project_id, s.slot_time, 
+               (SELECT status::text FROM check_status(v.request_id) AS cs(status approval_status) LIMIT 1) as status,
+               e.equipment_id, r.request_data, r.slot_count, e.unit_time, r.comment, r.cost
         FROM {view} v
+        JOIN request r ON v.request_id = r.request_id
         JOIN slot s ON s.slot_id = v.slot_id
         JOIN equipment e ON s.equipment_id = e.equipment_id
+        ORDER BY v.request_id DESC
     """
     
     r = list(db.execute_dql_commands(query))
     result = []
-    fields = ["request_id", "slot_id", "equipment_name", "proj_id", "slot_time", "status"]
+    
+    fields = [
+        "request_id", "slot_id", "equipment_name", "project_id", "slot_time", "status", 
+        "equipment_id", "request_data", "slot_count", "unit_time", "comment", "cost"
+    ]
     
     for i in r:
         record = {}
@@ -1056,7 +1095,7 @@ def approve_extra_fund(db: PostgresqlDB, req_id: int, approved_amount: int, new_
            WHERE project_id = :pid""",
         {"amount": approved_amount, "pid": project_id, "expiry": new_expiry_date}
     )
-    
+
 def reject_extra_fund(db: PostgresqlDB, req_id: int):
     db.execute_ddl_and_dml_commands(
         "UPDATE extra_fund_request SET status = 'rejected' WHERE req_id = :req_id", 

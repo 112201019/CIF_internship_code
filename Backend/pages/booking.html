@@ -2,142 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CIF - Book Equipment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Equipment | CIF Student Portal</title>
   
-  <script src="script.js"></script>
-  <script src="book.js"></script>
+  <script src="book.js" defer></script>
   
   <style>
-    /* --- GLOBAL STYLES --- */
-    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; }
-    h1, h2, h3, h4 { color: #2c3e50; margin-top: 0; }
+    /* --- GLOBAL RESET & FONTS --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
     
     /* --- NAVBAR --- */
-    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: #2c3e50; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    .navbar { background-color: #2980b9; color: white; padding: 0 2rem; height: 60px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .logo { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
+    .back-btn { background: none; border: 1px solid white; color: white; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; text-decoration: none; transition: 0.2s; }
+    .back-btn:hover { background: white; color: #2980b9; }
+
+    /* --- MAIN CONTAINER --- */
+    .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; width: 100%; flex: 1; }
     
-    /* Dropdown Logic */
-    .user-menu { position: relative; cursor: pointer; display: inline-block; padding: 10px 0; }
-    .current-user { margin: 0; font-size: 16px; font-weight: 500; }
-    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #ffffff; min-width: 150px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 4px; z-index: 1000; overflow: hidden; }
-    .dropdown-content button { width: 100%; padding: 12px 16px; text-align: left; border: none; background: none; cursor: pointer; font-size: 14px; color: #333; font-family: inherit; }
-    .dropdown-content button:hover { background-color: #f1f1f1; }
-    .user-menu:hover .dropdown-content { display: block; }
+    .page-title { margin-bottom: 25px; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; display: inline-block; }
 
-    /* --- LAYOUT --- */
-    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-    .header { margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-    .header p { color: #666; margin: 5px 0 0 0; }
+    /* --- SECTIONS --- */
+    .section-card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+    .section-title { font-size: 1.1rem; color: #34495e; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+    .section-title span { background: #3498db; color: white; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; border-radius: 50%; font-size: 14px; font-weight: bold; }
 
-    /* --- CARDS --- */
-    .card { background: #fff; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; box-sizing: border-box; }
-    .card h3 { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+    /* --- GRID LAYOUTS --- */
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+    
+    /* --- PROJECT CARDS --- */
+    .project-card { border: 2px solid #e0e0e0; padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fff; }
+    .project-card:hover { border-color: #3498db; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .project-card.selected-project { border-color: #27ae60; background-color: #f2fcf5; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.15); }
+    .project-card h4 { color: #2c3e50; margin-bottom: 8px; font-size: 16px; }
+    .project-card p { font-size: 13px; color: #666; margin-bottom: 4px; }
 
-    /* --- TABLES --- */
-    .table-container { width: 100%; overflow-y: auto; max-height: 300px; border: 1px solid #eee; border-radius: 5px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
-    th { background-color: #f8f9fa; font-weight: 600; color: #555; position: sticky; top: 0; }
-    tr:hover { background-color: #fbfbfb; }
+    /* --- SLOT CARDS --- */
+    .slot-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa; display: flex; flex-direction: column; justify-content: space-between; }
+    .slot-card h4 { color: #2980b9; margin-bottom: 10px; font-size: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    .slot-card p { font-size: 13px; margin-bottom: 8px; color: #444; }
+    
+    /* --- FORMS & INPUTS --- */
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-weight: 600; font-size: 13px; color: #555; margin-bottom: 5px; }
+    .form-control { width: 100%; padding: 10px; border: 1px solid #ccd1d9; border-radius: 4px; font-size: 14px; transition: 0.2s; }
+    .form-control:focus { border-color: #3498db; outline: none; }
+    .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #eee; }
+    .checkbox-group input { width: 16px; height: 16px; cursor: pointer; }
 
     /* --- BUTTONS --- */
-    .select-project-btn { padding: 6px 12px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-    .select-project-btn:hover { background-color: #2980b9; }
-    .selected-project { background-color: #e8f4f8 !important; border-left: 4px solid #3498db; }
-
-    .request-button { background: #2c3e50 !important; border-radius: 4px; transition: 0.2s; font-weight: 600; }
-    .request-button:hover { background: #1a252f !important; }
-
-    .book-slot-btn { padding: 8px 16px; background-color: #27ae60 !important; color: #fff; border: none; cursor: pointer; margin-top: 10px; border-radius: 4px; font-weight: bold; width: 100%; transition: background 0.2s; }
-    .book-slot-btn:hover { background-color: #219150 !important; }
-
-    /* --- DYNAMIC EQUIPMENT & SLOT STYLES (Injected by book.js) --- */
-    .book { background: #fdfdfd; border: 1px solid #e0e0e0 !important; border-radius: 8px !important; padding: 20px !important; margin-top: 20px; }
-    .book h3 { border: none; padding-bottom: 5px; margin-bottom: 5px; color: #2980b9; }
-    
-    /* Display slots as a beautiful Grid instead of a vertical list */
-    .slots-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 20px !important; }
-    .slot { margin: 0 !important; padding: 15px !important; border: 1px solid #ddd !important; border-radius: 6px !important; background-color: #fff !important; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
-    .slot p { margin: 5px 0; font-size: 14px; color: #444; }
-    .slot strong { color: #2c3e50; }
-    
-    /* Inputs inside the dynamic forms */
-    input[type="text"], input[type="number"], textarea { border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
-    input[type="text"]:focus, input[type="number"]:focus, textarea:focus { outline: none; border-color: #3498db; }
+    .btn { padding: 10px 20px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 14px; text-align: center; }
+    .btn-primary { background: #3498db; color: white; }
+    .btn-primary:hover { background: #2980b9; }
+    .btn-success { background: #27ae60; color: white; width: 100%; margin-top: 10px; }
+    .btn-success:hover { background: #219653; }
+    .btn-disabled { background: #95a5a6; color: white; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
   <nav class="navbar">
-    <div class="logo">CIF STUDENT PORTAL</div>
-    <div style="display: flex; align-items: center; gap: 15px;">
-      <h3 class="current-user" style="margin: 0; font-size: 16px; font-weight: 500;">User: ...</h3>
-      <button onclick="openProfileModal()" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
-        Profile
-      </button>
-      <button onclick="logout()" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
-        Logout
-      </button>
-    </div>
+    <div class="logo">CIF BOOKING SYSTEM</div>
+    <a href="main.html" class="back-btn">&larr; Back to Dashboard</a>
   </nav>
 
   <div class="container">
-    <div class="header">
-      <h2>Book Your Equipment</h2>
-      <p>Follow the 2 steps below to secure your experiment slot.</p>
+    <h2 class="page-title">Book Equipment: <span id="equipmentNameDisplay" style="color:#e67e22;">Loading...</span></h2>
+
+    <div class="section-card">
+      <h3 class="section-title"><span>1</span> Select Your Project</h3>
+      <p style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Click on the project you want to deduct funds from for this experiment.</p>
+      <div id="projectTable" class="grid-container">
+        <p style="color:#777;">Loading active projects...</p>
+      </div>
     </div>
 
-    <!-- Step 1: Project Selection -->
-    <div class="card" style="border-top: 4px solid #2980b9;">
-      <h3>1. Select Your Approved Project</h3>
-      <p style="margin-top: -10px; margin-bottom: 15px; font-size: 0.9rem;">You must select a project funding source before you can book slots.</p>
-      
-      <div id="projectListContainer">
-        <div class="table-container">
-          <table id="projectTable">
-            <thead>
-              <tr>
-                <th>Project ID</th>
-                <th>Title</th>
-                <th>Supervisor</th>
-                <th style="width: 100px;">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colspan="4" style="text-align: center; color: #777;">Loading your projects...</td>
-              </tr>
-            </tbody>
-          </table>
+    <div id="books">
         </div>
-      </div>
-    </div>
-    
-    <!-- Step 2: Slot Selection -->
-    <div class="card" style="border-top: 4px solid #27ae60;">
-      <h3>2. Configure & Find Available Slots</h3>
-      <p style="margin-top: -10px; margin-bottom: 15px; font-size: 0.9rem;">Fill out any required equipment details, then choose your preferred time.</p>
-      
-      <div id="books">
-        <p style="color: #777; font-style: italic;">Loading equipment data...</p>
-      </div>
-    </div>
 
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const token = getCookie("session_token") || getCookie();
-      if (!token) {
-        window.location.href = "login.html";
-        return;
+    document.addEventListener("DOMContentLoaded", () => {
+      const equipName = getURLParameter("equipment");
+      if(equipName) {
+        document.getElementById("equipmentNameDisplay").textContent = equipName.toUpperCase();
       }
-      show_current_user();
       fetchAndDisplayProjects();
-      
-      // Fetches and displays the equipment slots based on URL param
-      trackRequest(); 
+      trackRequest();
     });
   </script>
 </body>

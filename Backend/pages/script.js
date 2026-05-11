@@ -149,60 +149,58 @@ async function show_current_user() {
   currentUser.textContent = `User: ${response_data.message}`;
 }
 async function fetchAndDisplayEquipments() {
-  try {
-    const token = getCookie("session_token"); // Use corrected cookie function
-    const response = await fetch(
-      "http://"+host+":8000/show_all_equipments",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      }
-    );
+    const token = getCookie("session_token") || getCookie();
+    if (!token) return;
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch equipment data");
+    try {
+        const response = await fetch("http://" + host + ":8000/show_all_equipments", {
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify({ token })
+        });
+        const data = await response.json();
+        const tbody = document.getElementById("equipmentTableBody");
+        
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        if (!data.message || data.message.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:50px; color:#94a3b8; font-style:italic;">No equipment currently available.</td></tr>`;
+            return;
+        }
+
+        data.message.forEach(eq => {
+            const row = document.createElement("tr");
+            
+            // Add a subtle bottom border and a nice hover effect
+            row.style.borderBottom = "1px solid #f1f5f9";
+            row.style.transition = "background-color 0.2s";
+            row.onmouseover = () => row.style.backgroundColor = "#f8fafc";
+            row.onmouseout = () => row.style.backgroundColor = "transparent";
+
+            // Increase padding to 22px top/bottom and 25px left/right
+            row.innerHTML = `
+                <td style="padding: 22px 25px; color: #334155; font-weight: 500; font-size: 15px;">
+                    ${eq.equipment_name}
+                </td>
+                <td style="padding: 22px 25px; text-align: center;">
+                    <button class="book-button" 
+                            style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; transition: all 0.2s; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);"
+                            onmouseover="this.style.backgroundColor='#059669'; this.style.transform='translateY(-1px)';" 
+                            onmouseout="this.style.backgroundColor='#10b981'; this.style.transform='translateY(0)';"
+                            onclick="window.location.href='booking.html?equipment=${encodeURIComponent(eq.equipment_name)}'">
+                        Book Now
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (err) {
+        console.error("Error fetching equipment:", err);
+        const tbody = document.getElementById("equipmentTableBody");
+        if(tbody) tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:40px; color:#ef4444;">Failed to load equipment.</td></tr>`;
     }
-
-    const data = await response.json();
-    const equipmentList = data.message; // Array of objects with `equipment_name`
-
-    // Get the table body element
-    const tableBody = document.getElementById("equipmentTableBody");
-    tableBody.innerHTML = ""; // Clear any existing rows
-
-    // Loop through the equipment objects and create rows
-    equipmentList.forEach((item) => {
-      const row = document.createElement("tr");
-
-      // Equipment name cell
-      const nameCell = document.createElement("td");
-      nameCell.textContent = item.equipment_name.toUpperCase();
-      row.appendChild(nameCell);
-
-      // Book button cell
-      const buttonCell = document.createElement("td");
-      const button = document.createElement("button");
-      button.textContent = "Book";
-      
-      // --- THIS IS THE IMPORTANT CHANGE ---
-      button.className = "book-button"; // Use the CSS class
-      // --- END OF CHANGE ---
-      
-      button.onclick = () => bookEquipment(item.equipment_name); 
-      buttonCell.appendChild(button);
-
-      row.appendChild(buttonCell);
-      tableBody.appendChild(row);
-    });
-  } catch (error) {
-    console.error("Error fetching equipment data:", error);
-    alert("Failed to fetch equipment data. Please try again later.");
-  }
 }
-
 // Placeholder function for booking logic
 function bookEquipment(equipmentName) {
   //   go to the booking page
@@ -265,555 +263,286 @@ function trackRequest() {
 // <div id="showPendingSuper"></div>
 function showPendingRequestsSuper() {
   const token = getCookie();
-  const requestData = {
-    token: token,
-  };
-
   fetch("http://" + host + ":8000/show_requests_supervisor", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: token }),
   })
-    .then((response) => response.json())
-
-    .then((data) => {
-      console.log(data);
+  .then((response) => response.json())
+  .then((data) => {
       const container = document.getElementById("showPendingSuper");
+      if (!container) return;
       container.innerHTML = "";
+      
+      if (!data.message || data.message.length === 0) {
+          container.innerHTML = "<p style='color:#777; font-style:italic;'>No pending requests.</p>";
+          return;
+      }
+
       data.message.forEach((request) => {
-        const requestDiv = document.createElement("div");
-        requestDiv.classList.add("request-item");
-
-        const requestIdPara = document.createElement("p");
-        requestIdPara.textContent = `Request ID: ${request.request_id}`;
-
-        const slotIdPara = document.createElement("p");
-        slotIdPara.textContent = `Starting Slot ID: ${request.slot_id}`;
-
-        const slotCountPara = document.createElement("p");
-        slotCountPara.textContent = `Slot Count: ${request.slot_count}`;
-
-        const equipmentIdPara = document.createElement("p");
-        equipmentIdPara.textContent = `Equipment Name: ${request.equipment_name}`;
-
-        const slotTimePara = document.createElement("p");
-        slotTimePara.textContent = `Slot Time: ${request.slot_time}`;
-
-        const SlotUnitTimePara = document.createElement("p");
-        SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
-
-        // --- NEW CODE: Add Comment Display ---
-        const commentDiv = document.createElement("div");
-        if (request.comment) {
-            commentDiv.innerHTML = `<p style="color:#d35400; background:#fff3e0; padding:5px; border-left:3px solid #d35400;"><strong>User Comment:</strong> ${request.comment}</p>`;
-        }
-        // -------------------------------------
-        // const requestDataPara = document.createElement("p");
-        // requestDataPara.textContent = `Request Data: ${request.request_data}`;
-        // --- NEW CODE: Add Student Info Display ---
-        const userInfoDiv = document.createElement("div");
-        userInfoDiv.style = "background: #eef2f5; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05);";
-        userInfoDiv.innerHTML = `
-            <span style="display:block; margin-bottom:4px; font-size: 1.05em; color: #2c3e50;">
-                <svg style="width:16px; height:16px; vertical-align:middle; margin-right:5px; margin-top:-2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                <strong>Requester:</strong> ${request.student_name} (${request.student_id})
-            </span>
-            <span style="display:block; font-size: 0.9em; color: #555;">
-                <strong>Dept:</strong> ${request.department} &nbsp;|&nbsp; <strong>Email:</strong> <a href="mailto:${request.mail_id}" style="color:#3498db; text-decoration:none;">${request.mail_id}</a>
-            </span>
-        `;
-        requestDiv.appendChild(userInfoDiv);
-        // ------------------------------------------
-        requestDiv.appendChild(requestIdPara);
-        requestDiv.appendChild(equipmentIdPara);
-        requestDiv.appendChild(slotIdPara);
-        requestDiv.appendChild(slotTimePara);
-        requestDiv.appendChild(slotCountPara);
-        requestDiv.appendChild(SlotUnitTimePara);
-        // Append the comment
-        requestDiv.appendChild(commentDiv);
-        // --- Handle the JSON Request Data ---
-        // --- Handle the JSON Request Data ---
-        // If request_data is a string, parse it. If it's already an object, use it directly.
-        const details = typeof request.request_data === 'string' 
-                        ? JSON.parse(request.request_data) 
-                        : request.request_data;
-
-        // 1. Process Requirements (List)
-        if (details.requirements && details.requirements.length > 0) {
-            const reqHeader = document.createElement("p");
-            reqHeader.innerHTML = "<strong>Requirements:</strong>";
-            const reqList = document.createElement("ul");
-            
-            details.requirements.forEach(req => {
-                const li = document.createElement("li");
-                li.textContent = req;
-                reqList.appendChild(li);
-            });
-            
-            requestDiv.appendChild(reqHeader);
-            requestDiv.appendChild(reqList);
-        }
-
-        // 2. Process Extra Questions/Answers (Key-Value)
-        if (details.answers && Object.keys(details.answers).length > 0) {
-            const ansHeader = document.createElement("p");
-            ansHeader.innerHTML = "<strong>Extra Details:</strong>";
-            requestDiv.appendChild(ansHeader);
-
-            // Loop through the object keys and values
-            Object.entries(details.answers).forEach(([question, answer]) => {
-                const qaDiv = document.createElement("div");
-                qaDiv.style.marginLeft = "15px";
-                qaDiv.style.marginBottom = "5px";
-                qaDiv.innerHTML = `
-                    <span style="color: #555;"></span> ${question} : <strong>${answer}</strong>
-                `;
-                requestDiv.appendChild(qaDiv);
-            });
-        }
-        container.appendChild(requestDiv);
-
-
-        // add two buttons to approve or reject the request
-        const approveButton = document.createElement("button");
-        approveButton.textContent = "Approve";
-        approveButton.style = `
-            padding: 8px 16px;
-            background-color: green;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-            margin-right: 10px;
-            margin-bottom: 10px;
+          const tile = document.createElement('div');
+          tile.className = "request-item";
+          // Flexbox ensures the button is pushed to the right side
+          tile.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-left: 4px solid #2980b9; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; border-radius: 6px;";
+          
+          tile.innerHTML = `
+              <div style="flex: 1;">
+                  <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:16px;">
+                    ${request.student_name} <span style="font-size:13px; color:#7f8c8d; font-weight:normal;">(${request.student_id})</span>
+                  </h4>
+                  <p style="margin: 0; font-size: 14px; color: #555;">
+                      <strong>Project ID:</strong> <span style="color:#2980b9;">${request.project_id}</span> &nbsp;|&nbsp; 
+                      <strong>Equipment:</strong> ${request.equipment_name} <span style="color:#777;">(${request.equipment_id})</span>
+                  </p>
+              </div>
           `;
-        requestDiv.appendChild(approveButton);
-        approveButton.addEventListener("click", () => {
-          approveRequest(request.request_id, approveButton);
-        });
-
-        const rejectButton = document.createElement("button");
-        rejectButton.textContent = "Reject";
-        rejectButton.style = `
-            padding: 8px 16px;
-            background-color: red;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-          `;
-        requestDiv.appendChild(rejectButton);
-        rejectButton.addEventListener("click", () => {
-          rejectRequest(request.request_id, rejectButton);
-        });
+          
+          const btnDiv = document.createElement('div');
+          const viewBtn = document.createElement('button');
+          viewBtn.className = "action-btn";
+          viewBtn.style.background = "#34495e";
+          viewBtn.style.padding = "8px 15px";
+          viewBtn.style.fontSize = "13px";
+          viewBtn.innerText = "More Info";
+          viewBtn.onclick = () => openRequestModal(request, "supervisor"); 
+          
+          btnDiv.appendChild(viewBtn);
+          tile.appendChild(btnDiv);
+          container.appendChild(tile);
       });
-    });
-}
-
-// --- SUPERVISOR DECISIONS ---
-function approveRequest(requestId, btn) {
-  const originalText = btn.innerHTML;
-  btn.innerHTML = `<span class="spinner"></span> Approving...`;
-  btn.classList.add("btn-loading");
-  btn.disabled = true;
-
-  const token = getCookie();
-  fetch("http://" + host + ":8000/decide_by_super_visor", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      alert("Request approved successfully.");
-      showPendingRequestsSuper();
-    })
-    .catch((error) => {
-      alert("An error occurred while approving the request.");
-      console.error(error);
-      btn.innerHTML = originalText;
-      btn.classList.remove("btn-loading");
-      btn.disabled = false;
-    });
-}
-
-function rejectRequest(requestId, btn) {
-  const originalText = btn.innerHTML;
-  btn.innerHTML = `<span class="spinner"></span> Rejecting...`;
-  btn.classList.add("btn-loading");
-  btn.disabled = true;
-
-  const token = getCookie();
-  fetch("http://" + host + ":8000/decide_by_super_visor", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      alert("Request rejected successfully.");
-      showPendingRequestsSuper();
-    })
-    .catch((error) => {
-      alert("An error occurred while rejecting the request.");
-      console.error(error);
-      btn.innerHTML = originalText;
-      btn.classList.remove("btn-loading");
-      btn.disabled = false;
-    });
+  });
 }
 
 function showPendingRequestsIn() {
   const token = getCookie();
-  const requestData = {
-    token: token,
-  };
-
   fetch("http://" + host + ":8000/show_requests_faculty_incharge", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: token }),
   })
-    .then((response) => response.json())
-
-    .then((data) => {
-      console.log(data);
+  .then((response) => response.json())
+  .then((data) => {
       const container = document.getElementById("showPendingIn");
+      if (!container) return;
       container.innerHTML = "";
+      
+      if (!data.message || data.message.length === 0) {
+          container.innerHTML = "<p style='color:#777; font-style:italic;'>No pending requests.</p>";
+          return;
+      }
+
       data.message.forEach((request) => {
-        const requestDiv = document.createElement("div");
-        requestDiv.classList.add("request-item");
-
-        const requestIdPara = document.createElement("p");
-        requestIdPara.textContent = `Request ID: ${request.request_id}`;
-
-        const slotIdPara = document.createElement("p");
-        slotIdPara.textContent = `Starting Slot ID: ${request.slot_id}`;
-
-        const slotCountPara = document.createElement("p");
-        slotCountPara.textContent = `Slot Count: ${request.slot_count}`;
-
-        const equipmentIdPara = document.createElement("p");
-        equipmentIdPara.textContent = `Equipment Name: ${request.equipment_name}`;
-
-        const slotTimePara = document.createElement("p");
-        slotTimePara.textContent = `Slot Time: ${request.slot_time}`;
-
-        const SlotUnitTimePara = document.createElement("p");
-        SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
-        // --- NEW CODE: Add Comment Display ---
-        const commentDiv = document.createElement("div");
-        if (request.comment) {
-            commentDiv.innerHTML = `<p style="color:#d35400; background:#fff3e0; padding:5px; border-left:3px solid #d35400;"><strong>User Comment:</strong> ${request.comment}</p>`;
-        }
-        // -------------------------------------
-        // const requestDataPara = document.createElement("p");
-        // requestDataPara.textContent = `Request Data: ${request.request_data}`;
-        // --- NEW CODE: Add Student Info Display ---
-        const userInfoDiv = document.createElement("div");
-        userInfoDiv.style = "background: #eef2f5; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05);";
-        userInfoDiv.innerHTML = `
-            <span style="display:block; margin-bottom:4px; font-size: 1.05em; color: #2c3e50;">
-                <svg style="width:16px; height:16px; vertical-align:middle; margin-right:5px; margin-top:-2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                <strong>Requester:</strong> ${request.student_name} (${request.student_id})
-            </span>
-            <span style="display:block; font-size: 0.9em; color: #555;">
-                <strong>Dept:</strong> ${request.department} &nbsp;|&nbsp; <strong>Email:</strong> <a href="mailto:${request.mail_id}" style="color:#3498db; text-decoration:none;">${request.mail_id}</a>
-            </span>
-        `;
-        requestDiv.appendChild(userInfoDiv);
-        // ------------------------------------------
-        requestDiv.appendChild(requestIdPara);
-        requestDiv.appendChild(equipmentIdPara);
-        requestDiv.appendChild(slotIdPara);
-        requestDiv.appendChild(slotTimePara);
-        requestDiv.appendChild(slotCountPara);
-        requestDiv.appendChild(SlotUnitTimePara);
-        // Append the comment
-        requestDiv.appendChild(commentDiv);
-        // --- Handle the JSON Request Data ---
-        // If request_data is a string, parse it. If it's already an object, use it directly.
-        const details = typeof request.request_data === 'string' 
-                        ? JSON.parse(request.request_data) 
-                        : request.request_data;
-
-        // 1. Process Requirements (List)
-        if (details.requirements && details.requirements.length > 0) {
-            const reqHeader = document.createElement("p");
-            reqHeader.innerHTML = "<strong>Requirements:</strong>";
-            const reqList = document.createElement("ul");
-            
-            details.requirements.forEach(req => {
-                const li = document.createElement("li");
-                li.textContent = req;
-                reqList.appendChild(li);
-            });
-            
-            requestDiv.appendChild(reqHeader);
-            requestDiv.appendChild(reqList);
-        }
-
-        // 2. Process Extra Questions/Answers (Key-Value)
-        if (details.answers && Object.keys(details.answers).length > 0) {
-            const ansHeader = document.createElement("p");
-            ansHeader.innerHTML = "<strong>Extra Details:</strong>";
-            requestDiv.appendChild(ansHeader);
-
-            // Loop through the object keys and values
-            Object.entries(details.answers).forEach(([question, answer]) => {
-                const qaDiv = document.createElement("div");
-                qaDiv.style.marginLeft = "15px";
-                qaDiv.style.marginBottom = "5px";
-                qaDiv.innerHTML = `
-                    <span style="color: #555;"></span> ${question} : <strong>${answer}</strong>
-                `;
-                requestDiv.appendChild(qaDiv);
-            });
-        }
-        container.appendChild(requestDiv);
-
-
-        // add two buttons to approve or reject the request
-        const approveButton = document.createElement("button");
-        approveButton.textContent = "Approve";
-        approveButton.style = `
-            padding: 8px 16px;
-            background-color: green;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-            margin-right: 10px;
-            margin-bottom: 10px;
+          const tile = document.createElement('div');
+          tile.className = "request-item";
+          // Flexbox ensures the button is pushed to the right side
+          tile.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-left: 4px solid #16a085; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; border-radius: 6px;";
+          
+          tile.innerHTML = `
+              <div style="flex: 1;">
+                  <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:16px;">
+                    ${request.student_name} <span style="font-size:13px; color:#7f8c8d; font-weight:normal;">(${request.student_id})</span>
+                  </h4>
+                  <p style="margin: 0; font-size: 14px; color: #555;">
+                      <strong>Supervisor:</strong> <span style="color:#16a085;">${request.supervisor_name}</span> &nbsp;|&nbsp; 
+                      <strong>Equipment:</strong> ${request.equipment_name} <span style="color:#777;">(${request.equipment_id})</span>
+                  </p>
+              </div>
           `;
-        requestDiv.appendChild(approveButton);
-        approveButton.addEventListener("click", () => {
-          approveRequestIN(request.request_id, approveButton);
-        });
-
-        const rejectButton = document.createElement("button");
-        rejectButton.textContent = "Reject";
-        rejectButton.style = `
-            padding: 8px 16px;
-            background-color: red;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-          `;
-        requestDiv.appendChild(rejectButton);
-        rejectButton.addEventListener("click", () => {
-          rejectRequestIN(request.request_id, rejectButton);
-        });
+          
+          const btnDiv = document.createElement('div');
+          const viewBtn = document.createElement('button');
+          viewBtn.className = "action-btn";
+          viewBtn.style.background = "#34495e";
+          viewBtn.style.padding = "8px 15px";
+          viewBtn.style.fontSize = "13px";
+          viewBtn.innerText = "More Info";
+          viewBtn.onclick = () => openRequestModal(request, "faculty"); 
+          
+          btnDiv.appendChild(viewBtn);
+          tile.appendChild(btnDiv);
+          container.appendChild(tile);
       });
-    });
+  });
 }
+
+function approveRequest(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `Approving...`; btn.disabled = true;
+
+  fetch("http://" + host + ":8000/decide_by_super_visor", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: getCookie(), request_id: requestId, decision: "approved" }),
+  }).then(r => r.json()).then(data => {
+      showPendingRequestsSuper();
+      closeRequestModal(); 
+  }).catch(e => { alert("Error"); btn.innerHTML = originalText; btn.disabled = false; });
+}
+
+function rejectRequest(requestId, btn) {
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `Rejecting...`; btn.disabled = true;
+
+  fetch("http://" + host + ":8000/decide_by_super_visor", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: getCookie(), request_id: requestId, decision: "rejected" }),
+  }).then(r => r.json()).then(data => {
+      showPendingRequestsSuper();
+      closeRequestModal();
+  }).catch(e => { alert("Error"); btn.innerHTML = originalText; btn.disabled = false; });
+}
+
+function openRequestModal(req, role) {
+    const body = document.getElementById('requestModalBody');
+    const actions = document.getElementById('requestModalActions');
+    
+    let details = {};
+    try {
+        details = typeof req.request_data === 'string' ? JSON.parse(req.request_data) : (req.request_data || {});
+    } catch(e) { console.error("JSON parse error", e); }
+
+    // Removed the fallback hacks because the backend now sends clean JOINed data!
+    let html = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">REQUEST ID</strong> ${req.request_id}</div>
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">STUDENT</strong> ${req.student_name} (${req.student_id})</div>
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">DEPARTMENT</strong> ${req.department || 'N/A'}</div>
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">EMAIL</strong> <a href="mailto:${req.mail_id}" style="color:#3498db; text-decoration:none;">${req.mail_id || 'N/A'}</a></div>
+            
+            ${role === 'faculty' ? `<div><strong style="color:#7f8c8d; font-size:12px; display:block;">SUPERVISOR</strong> ${req.supervisor_name}</div>` : ''}
+            
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">PROJECT ID</strong> ${req.project_id || 'N/A'}</div>
+        </div>
+        
+        <h4 style="border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 15px; color:#2c3e50;">Booking Specifics</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div><strong>Equipment:</strong> ${req.equipment_name} (${req.equipment_id})</div>
+            <div><strong>Slot Time:</strong> ${req.slot_time}</div>
+            <div><strong>Starting Slot ID:</strong> ${req.slot_id}</div>
+            <div><strong>Slot Count:</strong> ${req.slot_count} (Unit: ${req.unit_time})</div>
+        </div>
+    `;
+
+    if (details.requirements && details.requirements.length > 0) {
+        html += `<h4 style="margin-bottom: 5px; color:#2c3e50;">Requirements</h4>
+                 <ul style="margin-top:0; padding-left: 20px; margin-bottom: 15px;">
+                    ${details.requirements.map(r => `<li>${r}</li>`).join('')}
+                 </ul>`;
+    }
+    
+    if (details.answers && Object.keys(details.answers).length > 0) {
+        html += `<h4 style="margin-bottom: 5px; color:#2c3e50;">Additional Info</h4>
+                 <ul style="margin-top:0; padding-left: 20px; margin-bottom: 15px;">
+                    ${Object.entries(details.answers).map(([q, a]) => `<li><strong>${q}:</strong> ${a}</li>`).join('')}
+                 </ul>`;
+    }
+
+    if (req.comment) {
+        html += `<div style="background:#fff3e0; padding:15px; border-left: 4px solid #e67e22; margin-bottom: 15px; border-radius:0 4px 4px 0;">
+                    <strong style="color:#d35400;">User Comment:</strong><br> ${req.comment}
+                 </div>`;
+    }
+
+    body.innerHTML = html;
+
+    // Inside your existing openRequestModal function...
+    // Replace the bottom IF/ELSE statement with this:
+
+    if (role === 'supervisor') {
+        actions.innerHTML = `
+            <button class="action-btn" style="flex: 1; background: #27ae60; padding:12px; font-size: 15px;" onclick="approveRequest(${req.request_id}, this)">Approve Request</button>
+            <button class="action-btn" style="flex: 1; background: #e74c3c; padding:12px; font-size: 15px;" onclick="rejectRequest(${req.request_id}, this)">Reject Request</button>
+        `;
+    } else if (role === 'faculty') {
+        actions.innerHTML = `
+            <button class="action-btn" style="flex: 1; background: #27ae60; padding:12px; font-size: 15px;" onclick="approveRequestIN(${req.request_id}, this)">Approve Request</button>
+            <button class="action-btn" style="flex: 1; background: #e74c3c; padding:12px; font-size: 15px;" onclick="rejectRequestIN(${req.request_id}, this)">Reject Request</button>
+        `;
+    } else if (role === 'staff') {
+        // Staff-specific dynamic action buttons
+        actions.innerHTML = `
+            <button class="action-btn" style="flex: 1; background: #27ae60; padding:12px; font-size: 15px;" onclick="approveRequestStaff(${req.request_id}, this)">Approve Request</button>
+            <button class="action-btn" style="flex: 1; background: #e74c3c; padding:12px; font-size: 15px;" onclick="rejectRequestStaff(${req.request_id}, this)">Reject Request</button>
+        `;
+    }
+    
+    document.getElementById('requestDetailsModal').style.display = 'block';
+}
+
+function closeRequestModal() {
+    document.getElementById('requestDetailsModal').style.display = 'none';
+}
+
+// --- UPDATE EXISTING APPROVAL FUNCTIONS TO CLOSE MODAL ---
 
 // --- FACULTY INCHARGE DECISIONS ---
 function approveRequestIN(requestId, btn) {
   const originalText = btn.innerHTML;
-  btn.innerHTML = `<span class="spinner"></span> Approving...`;
-  btn.classList.add("btn-loading");
-  btn.disabled = true;
+  btn.innerHTML = `Approving...`; btn.disabled = true;
 
-  const token = getCookie();
   fetch("http://" + host + ":8000/decide_by_faculty_incharge", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: token, request_id: requestId, decision: "approved" }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      alert("Request approved successfully.");
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: getCookie(), request_id: requestId, decision: "approved" }),
+  }).then(r => r.json()).then(data => {
       showPendingRequestsIn();
-    })
-    .catch((error) => {
-      alert("An error occurred while approving the request.");
-      console.error(error);
-      btn.innerHTML = originalText;
-      btn.classList.remove("btn-loading");
-      btn.disabled = false;
-    });
+      closeRequestModal();
+  }).catch(e => { alert("Error"); btn.innerHTML = originalText; btn.disabled = false; });
 }
 
 function rejectRequestIN(requestId, btn) {
   const originalText = btn.innerHTML;
-  btn.innerHTML = `<span class="spinner"></span> Rejecting...`;
-  btn.classList.add("btn-loading");
-  btn.disabled = true;
+  btn.innerHTML = `Rejecting...`; btn.disabled = true;
 
-  const token = getCookie();
   fetch("http://" + host + ":8000/decide_by_faculty_incharge", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: token, request_id: requestId, decision: "rejected" }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      alert("Request rejected successfully.");
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: getCookie(), request_id: requestId, decision: "rejected" }),
+  }).then(r => r.json()).then(data => {
       showPendingRequestsIn();
-    })
-    .catch((error) => {
-      alert("An error occurred while rejecting the request.");
-      console.error(error);
-      btn.innerHTML = originalText;
-      btn.classList.remove("btn-loading");
-      btn.disabled = false;
-    });
+      closeRequestModal();
+  }).catch(e => { alert("Error"); btn.innerHTML = originalText; btn.disabled = false; });
 }
 // Staff
 function showPendingRequestsStaff() {
   const token = getCookie();
-  const requestData = {
-    token: token,
-  };
-
   fetch("http://" + host + ":8000/show_requests_staff_incharge", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: token }),
   })
-    .then((response) => response.json())
-
-    .then((data) => {
-      console.log(data);
+  .then((response) => response.json())
+  .then((data) => {
       const container = document.getElementById("showPendingStaff");
+      if (!container) return;
       container.innerHTML = "";
+      
+      if (!data.message || data.message.length === 0) {
+          container.innerHTML = "<p style='color:#777; font-style:italic;'>No pending requests.</p>";
+          return;
+      }
+
       data.message.forEach((request) => {
-        const requestDiv = document.createElement("div");
-        requestDiv.classList.add("request-item");
-
-        const requestIdPara = document.createElement("p");
-        requestIdPara.textContent = `Request ID: ${request.request_id}`;
-
-        const slotIdPara = document.createElement("p");
-        slotIdPara.textContent = `Starting Slot ID: ${request.slot_id}`;
-
-        const slotCountPara = document.createElement("p");
-        slotCountPara.textContent = `Slot Count: ${request.slot_count}`;
-
-        const equipmentIdPara = document.createElement("p");
-        equipmentIdPara.textContent = `Equipment Name: ${request.equipment_name}`;
-
-        const slotTimePara = document.createElement("p");
-        slotTimePara.textContent = `Slot Time: ${request.slot_time}`;
-
-        const SlotUnitTimePara = document.createElement("p");
-        SlotUnitTimePara.textContent = `Slot Unit Time: ${request.unit_time}`;
-
-        // --- NEW CODE: Add Comment Display ---
-        const commentDiv = document.createElement("div");
-        if (request.comment) {
-            commentDiv.innerHTML = `<p style="color:#d35400; background:#fff3e0; padding:5px; border-left:3px solid #d35400;"><strong>User Comment:</strong> ${request.comment}</p>`;
-        }
-        // -------------------------------------
-        // const requestDataPara = document.createElement("p");
-        // requestDataPara.textContent = `Request Data: ${request.request_data}`;
-        // --- NEW CODE: Add Student Info Display ---
-        const userInfoDiv = document.createElement("div");
-        userInfoDiv.style = "background: #eef2f5; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05);";
-        userInfoDiv.innerHTML = `
-            <span style="display:block; margin-bottom:4px; font-size: 1.05em; color: #2c3e50;">
-                <svg style="width:16px; height:16px; vertical-align:middle; margin-right:5px; margin-top:-2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                <strong>Requester:</strong> ${request.student_name} (${request.student_id})
-            </span>
-            <span style="display:block; font-size: 0.9em; color: #555;">
-                <strong>Dept:</strong> ${request.department} &nbsp;|&nbsp; <strong>Email:</strong> <a href="mailto:${request.mail_id}" style="color:#3498db; text-decoration:none;">${request.mail_id}</a>
-            </span>
-        `;
-        requestDiv.appendChild(userInfoDiv);
-        // ------------------------------------------
-        requestDiv.appendChild(requestIdPara);
-        requestDiv.appendChild(equipmentIdPara);
-        requestDiv.appendChild(slotIdPara);
-        requestDiv.appendChild(slotTimePara);
-        requestDiv.appendChild(slotCountPara);
-        requestDiv.appendChild(SlotUnitTimePara);
-        // Append the comment
-        requestDiv.appendChild(commentDiv);
-        // --- Handle the JSON Request Data ---
-        // If request_data is a string, parse it. If it's already an object, use it directly.
-        const details = typeof request.request_data === 'string' 
-                        ? JSON.parse(request.request_data) 
-                        : request.request_data;
-
-        // 1. Process Requirements (List)
-        if (details.requirements && details.requirements.length > 0) {
-            const reqHeader = document.createElement("p");
-            reqHeader.innerHTML = "<strong>Requirements:</strong>";
-            const reqList = document.createElement("ul");
-            
-            details.requirements.forEach(req => {
-                const li = document.createElement("li");
-                li.textContent = req;
-                reqList.appendChild(li);
-            });
-            
-            requestDiv.appendChild(reqHeader);
-            requestDiv.appendChild(reqList);
-        }
-
-        // 2. Process Extra Questions/Answers (Key-Value)
-        if (details.answers && Object.keys(details.answers).length > 0) {
-            const ansHeader = document.createElement("p");
-            ansHeader.innerHTML = "<strong>Extra Details:</strong>";
-            requestDiv.appendChild(ansHeader);
-
-            // Loop through the object keys and values
-            Object.entries(details.answers).forEach(([question, answer]) => {
-                const qaDiv = document.createElement("div");
-                qaDiv.style.marginLeft = "15px";
-                qaDiv.style.marginBottom = "5px";
-                qaDiv.innerHTML = `
-                    <span style="color: #555;"></span> ${question} : <strong>${answer}</strong>
-                `;
-                requestDiv.appendChild(qaDiv);
-            });
-        }
-        container.appendChild(requestDiv);
-
-
-        // add two buttons to approve or reject the request
-        const approveButton = document.createElement("button");
-        approveButton.textContent = "Approve";
-        approveButton.style = `
-            padding: 8px 16px;
-            background-color: green;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-            margin-right: 10px;
-            margin-bottom: 10px;
+          const tile = document.createElement('div');
+          tile.className = "request-item";
+          // Purple border-left to match the Staff Theme
+          tile.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-left: 4px solid #8e44ad; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; border-radius: 6px;";
+          
+          tile.innerHTML = `
+              <div style="flex: 1;">
+                  <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:16px;">
+                    ${request.student_name} <span style="font-size:13px; color:#7f8c8d; font-weight:normal;">(${request.student_id})</span>
+                  </h4>
+                  <p style="margin: 0; font-size: 14px; color: #555;">
+                      <strong>Project ID:</strong> <span style="color:#8e44ad;">${request.project_id}</span> &nbsp;|&nbsp; 
+                      <strong>Equipment:</strong> ${request.equipment_name} <span style="color:#777;">(${request.equipment_id})</span>
+                  </p>
+              </div>
           `;
-        requestDiv.appendChild(approveButton);
-        approveButton.addEventListener("click", () => {
-          approveRequestStaff(request.request_id, approveButton);
-        });
-
-        const rejectButton = document.createElement("button");
-        rejectButton.textContent = "Reject";
-        rejectButton.style = `
-            padding: 8px 16px;
-            background-color: red;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-          `;
-        requestDiv.appendChild(rejectButton);
-        rejectButton.addEventListener("click", () => {
-          rejectRequestStaff(request.request_id, rejectButton);
-        });
+          
+          const btnDiv = document.createElement('div');
+          const viewBtn = document.createElement('button');
+          viewBtn.className = "action-btn";
+          viewBtn.style.background = "#34495e";
+          viewBtn.style.padding = "8px 15px";
+          viewBtn.style.fontSize = "13px";
+          viewBtn.innerText = "More Info";
+          
+          // CRITICAL: We pass the role 'staff' so the modal generates the correct Approve/Reject buttons
+          viewBtn.onclick = () => openRequestModal(request, "staff"); 
+          
+          btnDiv.appendChild(viewBtn);
+          tile.appendChild(btnDiv);
+          container.appendChild(tile);
       });
-    });
+  });
 }
 
 function approveRequestStaff(requestId, btn) {
@@ -832,6 +561,7 @@ function approveRequestStaff(requestId, btn) {
     .then((data) => {
       alert("Request approved successfully.");
       showPendingRequestsStaff();
+      closeRequestModal();
     })
     .catch((error) => {
       alert("An error occurred while approving the request.");
@@ -858,6 +588,7 @@ function rejectRequestStaff(requestId, btn) {
     .then((data) => {
       alert("Request rejected successfully.");
       showPendingRequestsStaff();
+      closeRequestModal();
     })
     .catch((error) => {
       alert("An error occurred while rejecting the request.");
@@ -867,9 +598,8 @@ function rejectRequestStaff(requestId, btn) {
       btn.disabled = false;
     });
 }
-// Show all requests of the current user
 async function showRequestsAll() {
-  const token = getCookie("session_token"); // Ensure cookie name matches your setup
+  const token = getCookie("session_token") || getCookie();
   if(!token) return;
 
   try {
@@ -881,29 +611,44 @@ async function showRequestsAll() {
     );
     const data = await response.json();
     const container = document.getElementById("requestInfo2");
+    
     if(container) {
         container.innerHTML = "";
-        data.message.forEach((request) => {
-          const requestDiv = document.createElement("div");
-          requestDiv.classList.add("request-item");
-          
-          const formattedTime = formatSlotTime(request.slot_time);
-          
-          // Color code the status
-          let statusColor = "#f39c12"; // pending
-          if(request.status === 'approved') statusColor = "#27ae60";
-          if(request.status === 'rejected') statusColor = "#c0392b";
+        
+        if (!data.message || data.message.length === 0) {
+            container.innerHTML = "<p style='color:#777; font-style:italic;'>You have no booking requests.</p>";
+            return;
+        }
 
-          requestDiv.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:start;">
-                <p style="margin-top:0;"><strong>Request ID:</strong> ${request.request_id}</p>
-                <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:12px; font-size:0.8em; font-weight:bold; text-transform:uppercase;">${request.status || 'Pending'}</span>
-            </div>
-            <p><strong>Equipment:</strong> ${request.equipment_name.toUpperCase()}</p>
-            <p><strong>Time:</strong> ${formattedTime}</p>
-            <p style="font-size:0.9em; color:#666; margin-bottom:0;">Project: ${request.proj_id}</p>
+        data.message.forEach((request) => {
+          const tile = document.createElement("div");
+          tile.className = "request-item";
+          
+          let statusColor = "#f39c12"; // Orange for pending
+          if(request.status === 'approved') statusColor = "#27ae60"; // Green
+          if(request.status === 'rejected') statusColor = "#e74c3c"; // Red
+
+          tile.style = `display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-left: 4px solid ${statusColor}; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; border-radius: 6px;`;
+
+          // Using JSON.stringify.replace to safely pass the object to the onclick handler
+          const safeReqData = JSON.stringify(request).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+
+          tile.innerHTML = `
+              <div style="flex: 1;">
+                  <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:16px;">
+                    ${request.equipment_name} <span style="font-size:13px; color:#7f8c8d; font-weight:normal;">(${request.equipment_id})</span>
+                  </h4>
+                  <p style="margin: 0; font-size: 14px; color: #555;">
+                      <strong>Project ID:</strong> <span style="color:#3498db;">${request.project_id}</span> &nbsp;|&nbsp; 
+                      <strong>Date:</strong> ${formatSlotTime(request.slot_time)}
+                  </p>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                  <span style="background:${statusColor}; color:white; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">${request.status || 'Pending'}</span>
+                  <button class="action-btn" style="background:#34495e; padding:6px 12px; font-size:12px;" onclick="openStudentModal(${safeReqData})">More Info</button>
+              </div>
           `;
-          container.appendChild(requestDiv);
+          container.appendChild(tile);
         });
     }
   } catch (error) {
@@ -1228,9 +973,13 @@ async function updateProjectId() {
 /**
  * Closes the modal if the user clicks on the background overlay.
  */
+// Ensure the background click closes BOTH modals
 function closeModalIfOutside(event) {
   if (event.target.id === "addProjectModal") {
     closeProjectModal();
+  }
+  if (event.target.id === "requestDetailsModal") {
+    closeRequestModal();
   }
 }
 
@@ -1314,13 +1063,16 @@ async function loadOngoingExperiments() {
       const div = document.createElement("div");
       div.className = "request-item";
       
+      // FIX: Grab project_id securely
+      const pId = exp.project_id || 'N/A';
+      
       div.innerHTML = `
         <div class="req-header" style="border-bottom: 1px solid #ccc; padding-bottom:5px; margin-bottom:5px;">
             <strong>Request ID: ${exp.request_id}</strong>
         </div>
         <p style="margin:5px 0;"><strong>Equipment:</strong> ${exp.equipment_name}</p>
         <p style="margin:5px 0;"><strong>Scheduled:</strong> ${exp.slot_time}</p>
-        <p style="margin:5px 0;"><strong>Project ID:</strong> ${exp.proj_id}</p>
+        <p style="margin:5px 0;"><strong>Project ID:</strong> ${pId}</p>
         
         <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
         
@@ -1336,7 +1088,7 @@ async function loadOngoingExperiments() {
         
         <div style="display:flex; gap:10px; margin-top:10px;">
             <button class="btn btn-success" 
-                onclick="finalizeAndBill(${exp.request_id}, '${exp.proj_id}')"
+                onclick="finalizeAndBill(${exp.request_id}, '${pId}')"
                 style="flex:1; background-color:#27ae60; color:white; padding:10px; border:none; cursor:pointer;">
               Complete
             </button>
@@ -1590,4 +1342,167 @@ async function loadStaffEquipmentDropdown() {
         console.error("Error loading equipment for dropdown:", error);
         dropdown.innerHTML = '<option value="" disabled>Error connecting to server</option>';
     }
+}
+
+// ==========================================
+// STAFF SIDEBAR ROUTER LOGIC
+// ==========================================
+function switchSectionStaff(button) {
+    document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+    
+    const section = button.getAttribute('data-section');
+    const contentArea = document.getElementById('contentArea');
+
+    if (section === 'staff_approvals') {
+        contentArea.innerHTML = `
+            <div class="form-container" style="max-width: 100%;">
+                <h2 style="border-bottom-color: #8e44ad;">Staff Approvals</h2>
+                <p class="note">Finalize equipment requests from students after faculty approval.</p>
+                <button class="action-btn" style="background:#8e44ad; margin-bottom: 15px;" onclick="showPendingRequestsStaff()">Refresh Requests</button>
+                <div id="showPendingStaff" class="request-list"></div>
+            </div>
+        `;
+        if (typeof showPendingRequestsStaff === "function") showPendingRequestsStaff();
+    } 
+    else if (section === 'ongoing_experiments') {
+        contentArea.innerHTML = `
+            <div class="form-container" style="max-width: 100%;">
+                <h2 style="border-bottom-color: #e67e22;">Ongoing Experiments</h2>
+                <p class="note">Manage currently running experiments, finalize them, and add extra charges if needed.</p>
+                <button class="action-btn" style="background:#e67e22; margin-bottom: 15px;" onclick="loadOngoingExperiments()">Refresh List</button>
+                <div id="ongoingExperimentsList" class="request-list"></div>
+            </div>
+        `;
+        if (typeof loadOngoingExperiments === "function") loadOngoingExperiments();
+    }
+    else if (section === 'manage_slots') {
+        contentArea.innerHTML = `
+            <div class="form-container" style="max-width: 100%;">
+                <h2 style="border-bottom-color: #27ae60;">Manage Equipment Slots</h2>
+                <p class="note">Add new availability slots for the equipment you are assigned to.</p>
+                <form id="addSlotForm" onsubmit="handleAddSlot(event)">
+                    <div class="form-group">
+                        <label for="equipmentId">Select Equipment:</label>
+                        <select id="equipmentId" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="startTime">Start Time:</label>
+                        <input type="datetime-local" id="startTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endTime">End Time:</label>
+                        <input type="datetime-local" id="endTime" required>
+                    </div>
+                    <button type="submit" class="action-btn" style="width: 100%;">Add Slot(s)</button>
+                </form>
+                <div id="responseMessage" style="margin-top:15px; font-weight:bold; text-align:center;"></div>
+            </div>
+        `;
+        if (typeof loadStaffEquipmentDropdown === "function") loadStaffEquipmentDropdown();
+    }
+}
+
+// ==========================================
+// STUDENT SIDEBAR ROUTER LOGIC
+// ==========================================
+function switchSectionStudent(button) {
+    document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+    
+    const section = button.getAttribute('data-section');
+    const contentArea = document.getElementById('contentArea');
+
+    if (section === 'my_requests') {
+        contentArea.innerHTML = `
+            <div class="form-container" style="max-width: 100%;">
+                <h2 style="border-bottom-color: #3498db;">My Requests</h2>
+                <p class="note">Track the multi-tier approval status of your equipment bookings.</p>
+                <button class="action-btn" style="background:#3498db; margin-bottom: 15px;" onclick="showRequestsAll()">Refresh Requests</button>
+                <div id="requestInfo2" class="request-list"></div>
+            </div>
+        `;
+        if (typeof showRequestsAll === "function") showRequestsAll();
+    } 
+    else if (section === 'book_equipment') {
+        contentArea.innerHTML = `
+            <div class="form-container" style="max-width: 800px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 10px;">
+                <h2 style="border-bottom-color: #27ae60; padding-bottom: 15px; color: #2c3e50;">Choose Equipment</h2>
+                <p class="note" style="margin-bottom: 25px; font-size: 15px;">Select an instrument below to view available slots and begin the booking process.</p>
+                
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 15px; background: white;">
+                        <thead>
+                            <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 20px 25px; text-align: left; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">Equipment Name</th>
+                                <th style="padding: 20px 25px; text-align: center; width: 160px; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equipmentTableBody">
+                            <tr><td colspan="2" style="text-align:center; padding:50px; color:#94a3b8;">Loading available equipment...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        if (typeof fetchAndDisplayEquipments === "function") fetchAndDisplayEquipments();
+    }
+}
+
+function openStudentModal(req) {
+    const body = document.getElementById('requestModalBody');
+    const actions = document.getElementById('requestModalActions');
+    
+    let details = {};
+    try {
+        details = typeof req.request_data === 'string' ? JSON.parse(req.request_data) : (req.request_data || {});
+    } catch(e) { console.error("JSON parse error", e); }
+
+    let statusColor = "#f39c12"; 
+    if(req.status === 'approved') statusColor = "#27ae60"; 
+    if(req.status === 'rejected') statusColor = "#e74c3c"; 
+
+    let html = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">REQUEST ID</strong> ${req.request_id}</div>
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">STATUS</strong> <span style="text-transform:uppercase; font-weight:bold; color:${statusColor};">${req.status}</span></div>
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">PROJECT ID</strong> ${req.project_id || 'N/A'}</div>
+            <div><strong style="color:#7f8c8d; font-size:12px; display:block;">EST. COST DEDUCTED</strong> ₹${req.cost || 0}</div>
+        </div>
+        
+        <h4 style="border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 15px; color:#2c3e50;">Booking Specifics</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div><strong>Equipment:</strong> ${req.equipment_name} (${req.equipment_id})</div>
+            <div><strong>Slot Time:</strong> ${formatSlotTime(req.slot_time)}</div>
+            <div><strong>Starting Slot ID:</strong> ${req.slot_id}</div>
+            <div><strong>Slot Count:</strong> ${req.slot_count} (Unit: ${req.unit_time})</div>
+        </div>
+    `;
+
+    if (details.requirements && details.requirements.length > 0) {
+        html += `<h4 style="margin-bottom: 5px; color:#2c3e50;">Selected Requirements</h4>
+                 <ul style="margin-top:0; padding-left: 20px; margin-bottom: 15px;">
+                    ${details.requirements.map(r => `<li>${r}</li>`).join('')}
+                 </ul>`;
+    }
+    
+    if (details.answers && Object.keys(details.answers).length > 0) {
+        html += `<h4 style="margin-bottom: 5px; color:#2c3e50;">Additional Info Provided</h4>
+                 <ul style="margin-top:0; padding-left: 20px; margin-bottom: 15px;">
+                    ${Object.entries(details.answers).map(([q, a]) => `<li><strong>${q}:</strong> ${a}</li>`).join('')}
+                 </ul>`;
+    }
+
+    if (req.comment) {
+        html += `<div style="background:#eaf2f8; padding:15px; border-left: 4px solid #3498db; margin-bottom: 15px; border-radius:0 4px 4px 0;">
+                    <strong style="color:#2980b9;">Your Comment:</strong><br> ${req.comment}
+                 </div>`;
+    }
+
+    body.innerHTML = html;
+    
+    // Hide the grey action footer entirely since students only view data
+    actions.style.display = 'none';
+    
+    document.getElementById('requestDetailsModal').style.display = 'block';
 }
